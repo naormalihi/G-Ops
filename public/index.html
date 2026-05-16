@@ -1,0 +1,2241 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<base href="/G-Ops/">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<title>G-Ops | Field Control</title>
+<meta name="theme-color" content="#020817"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Globus FC"/>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;900&display=swap" rel="stylesheet"/>
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, query, where, orderBy, limit, onSnapshot, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyD2wLxfm0PM624rP5JA6fk7zTWZxLHUcMk",
+    authDomain: "g-ops-c651e.firebaseapp.com",
+    projectId: "g-ops-c651e",
+    storageBucket: "g-ops-c651e.firebasestorage.app",
+    messagingSenderId: "685701485296",
+    appId: "1:685701485296:web:eedd5fafe468a88650a835",
+    measurementId: "G-D7GPWMGWDK"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  window.fbAuth = getAuth(fbApp);
+  window.fbDb  = getFirestore(fbApp);
+  window.fbFns = { collection, doc, getDoc, getDocs, setDoc, addDoc, query, where, orderBy, limit, onSnapshot, deleteDoc, serverTimestamp };
+  window._fbSignIn = signInWithEmailAndPassword;
+
+  // When auth state changes, boot the app
+  onAuthStateChanged(window.fbAuth, function(user) {
+    if (window._authReady) window._authReady(user);
+  });
+</script>
+
+<link href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" rel="preload" as="script"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#020817;--bg2:#0f172a;--bg3:#1e293b;--border:#1e293b;--border2:#334155;
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--text4:#475569;
+  --blue:#1e3a5f;--blue2:#3b82f6;--blue3:#60a5fa;--blue4:#93c5fd;
+  --card:#0f172a;--header-bg:linear-gradient(135deg,#0a1220,#0d1a38);
+  --drawer-bg:#0a1628;--input-bg:#1e293b;
+}
+
+body{background:var(--bg);font-family:'Heebo',Arial,sans-serif;direction:rtl;color:var(--text);min-height:100vh;overflow-x:hidden;transition:background .2s,color .2s}
+#root{max-width:480px;margin:0 auto}
+@media (min-width:768px){
+  body{background:#0a0f1e}
+  #login-screen{background:linear-gradient(160deg,#020817 0%,#0a1628 100%)}
+  .login-card{max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  #app-screen{display:flex;justify-content:center;min-height:100vh}
+  #app{max-width:520px;width:100%;background:#020817;box-shadow:0 0 40px rgba(0,0,0,.5);min-height:100vh}
+  #drawer{max-width:300px}
+  #nav{max-width:520px}
+  .fab{left:calc(50% - 240px)}
+}
+@media (min-width:1024px){
+  #app{max-width:560px}
+  #nav{max-width:560px}
+  .fab{left:calc(50% - 260px)}
+  #header{max-width:560px}
+}
+
+/* LOGIN */
+#login-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:var(--bg)}
+.login-logo{height:56px;margin-bottom:32px}
+.login-card{background:var(--card);border:1px solid var(--blue);border-radius:16px;padding:28px 22px;width:100%;max-width:360px}
+.login-title{color:#93c5fd;font-size:18px;font-weight:800;margin-bottom:6px;text-align:center}
+.login-sub{color:#475569;font-size:12px;text-align:center;margin-bottom:22px}
+.login-field{margin-bottom:14px}
+.login-label{color:#94a3b8;font-size:11px;font-weight:600;display:block;margin-bottom:5px}
+.login-input{width:100%;background:var(--input-bg);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:10px 12px;font-family:inherit;font-size:14px;direction:rtl;outline:none}
+.login-input:focus{border-color:#3b82f6}
+.login-btn{width:100%;background:linear-gradient(135deg,#1d4ed8,#1e40af);color:#fff;border:none;border-radius:10px;padding:12px;font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;margin-top:6px;box-shadow:0 4px 14px rgba(29,78,216,.35)}
+.login-err{color:#f87171;font-size:11px;text-align:center;margin-top:8px;min-height:16px}
+.pass-wrap{position:relative;display:flex;align-items:center}
+.pass-wrap .login-input,.pass-wrap .ti{padding-left:36px;width:100%}
+.eye-btn{position:absolute;left:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#475569;display:flex;align-items:center;padding:0;line-height:1;font-size:18px}
+.eye-btn:hover{color:#93c5fd}
+
+/* APP */
+#app-screen{display:none}
+#app{max-width:480px;margin:0 auto;padding-bottom:20px;min-height:100vh}
+
+/* HEADER */
+#header{background:var(--header-bg);border-bottom:2px solid var(--blue);padding:10px 14px 9px;position:sticky;top:0;z-index:50}
+.hd-row{display:flex;justify-content:space-between;align-items:center}
+.logo-img{height:28px;width:auto}
+.hd-right{display:flex;align-items:center;gap:8px}
+.hd-user{color:#60a5fa;font-size:11px;font-weight:700}
+.logout-btn{background:none;border:1px solid #334155;border-radius:5px;color:#64748b;font-size:10px;cursor:pointer;font-family:inherit;padding:2px 7px}
+.hd-date{color:#475569;font-size:10px;margin-top:3px}
+.badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.badge{border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;white-space:nowrap}
+.b-blue{background:#1e3a5f;color:#60a5fa}
+.b-red{background:#7f1d1d;color:#fca5a5}
+.b-yellow{background:#2d1f00;color:#fbbf24}
+.b-green{background:#052e16;color:#4ade80}
+
+/* HAMBURGER & DRAWER */
+.hbg-btn{background:none;border:none;cursor:pointer;color:#94a3b8;font-size:24px;padding:4px 6px;line-height:1;display:flex;align-items:center}
+.hbg-btn:hover{color:#93c5fd}
+#drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:90;display:none;transition:background .25s}
+#drawer-overlay.open{display:block;background:rgba(0,0,0,.6)}
+#drawer{position:fixed;top:0;right:-85vw;width:80vw;max-width:300px;height:100vh;height:100dvh;background:var(--drawer-bg);border-left:1px solid #1e3a5f;z-index:100;transition:right .25s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}
+#drawer.open{right:0}
+.drawer-user{padding:18px 16px 14px;border-bottom:1px solid #1e293b;flex-shrink:0}
+.drawer-avatar{width:40px;height:40px;background:#1e3a5f;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px}
+.drawer-user-name{color:#93c5fd;font-weight:800;font-size:15px;margin-bottom:2px}
+.drawer-user-role{color:#475569;font-size:11px}
+.drawer-nav{padding:8px 0;flex:1;overflow-y:auto;min-height:0}
+.drawer-item{display:flex;align-items:center;gap:12px;padding:13px 18px;cursor:pointer;color:#94a3b8;font-size:14px;font-weight:600;border:none;background:none;font-family:inherit;width:100%;text-align:right;direction:rtl;transition:all .15s;border-right:3px solid transparent}
+.drawer-item:hover{background:#1e293b;color:#e2e8f0}
+.drawer-item.active{background:#1e3a5f;color:#93c5fd;border-right-color:#3b82f6}
+.drawer-item .di{font-size:18px;width:24px;text-align:center;flex-shrink:0}
+.drawer-sep{height:1px;background:#1e293b;margin:6px 16px}
+.drawer-logout{padding:6px 0;border-top:1px solid #1e293b;flex-shrink:0;background:#0a1628;position:sticky;bottom:0}
+.drawer-logout-btn{display:flex;align-items:center;gap:12px;padding:13px 18px;cursor:pointer;color:#f87171;font-size:14px;font-weight:600;border:none;background:none;font-family:inherit;width:100%;text-align:right;direction:rtl;transition:all .15s}
+.drawer-logout-btn:hover{background:#1a0a0a}
+.dash-filters{display:flex;gap:7px;align-items:center;margin-bottom:14px;flex-wrap:nowrap}
+.dash-sel{flex:1;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#93c5fd;font-family:inherit;font-size:12px;font-weight:600;padding:8px 26px 8px 10px;direction:rtl;outline:none;cursor:pointer;min-width:0;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2360a5fa'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 8px center}
+.dash-sel:focus{border-color:#3b82f6}
+.dash-reset{background:none;border:1px solid #334155;border-radius:8px;color:#64748b;font-size:11px;padding:7px 9px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
+.dash-reset.active{border-color:#3b82f6;color:#60a5fa}
+.fab{position:fixed;bottom:24px;left:20px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#1e40af);color:#fff;border:none;font-size:26px;cursor:pointer;box-shadow:0 4px 18px rgba(29,78,216,.5);display:flex;align-items:center;justify-content:center;z-index:70;transition:transform .15s}
+.fab{position:fixed;bottom:24px;left:20px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#1e40af);color:#fff;border:none;font-size:26px;cursor:pointer;box-shadow:0 4px 18px rgba(29,78,216,.5);display:flex;align-items:center;justify-content:center;z-index:70;transition:transform .15s}
+
+/* SCREENS */
+.screen{padding:11px 12px 0}
+.hidden{display:none!important}
+
+/* DAY TABS */
+.day-tabs{display:flex;gap:0;background:#0f172a;border-radius:10px;padding:3px;margin-bottom:11px;border:1px solid #1e293b}
+.day-tab{flex:1;padding:8px;text-align:center;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;color:#475569;border:none;background:none;font-family:inherit;transition:all .15s;position:relative}
+.day-tab.active{background:#1e3a5f;color:#93c5fd}
+.day-tab .signed-badge{position:absolute;top:3px;right:6px;font-size:9px}
+
+/* TEAM CARDS */
+.team-card{border-radius:11px;overflow:hidden;border:1px solid var(--border);margin-bottom:7px}
+.team-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;cursor:pointer;background:var(--card)}
+.team-hd.open{background:#111d35;border-bottom:1px solid #1e3a5f}
+.team-hd-left{display:flex;align-items:center;gap:8px}
+.team-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;display:inline-block}
+.dot-ok{background:#22c55e}.dot-warn{background:#ef4444}.dot-pending{background:#475569}.dot-partial{background:#f59e0b}.dot-absent{background:#7c3aed}.dot-merged{background:#1d4ed8}
+.team-hd-name{font-weight:700;font-size:13px;color:#cbd5e1}
+.team-hd-sub{color:#475569;font-size:10px;margin-top:1px}
+.team-hd-right{display:flex;align-items:center;gap:5px}
+.team-pill{font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px}
+.pill-ok{background:#052e16;color:#4ade80;border:1px solid #166534}
+.pill-warn{background:#2d0a0a;color:#f87171;border:1px solid #7f1d1d}
+.pill-partial{background:#2d1f00;color:#fbbf24;border:1px solid #92400e}
+.pill-pending{background:#1e293b;color:#64748b;border:1px solid #334155}
+.pill-absent{background:#1a1040;color:#a78bfa;border:1px solid #6d28d9}
+.pill-merged{background:#0c1a30;color:#60a5fa;border:1px solid #1e40af}
+.team-chev{color:#475569;font-size:12px}
+.team-body{background:var(--bg);padding:12px 11px;display:flex;flex-direction:column;gap:11px}
+
+/* EOD */
+.eod-body{background:var(--bg);padding:12px 11px}
+.status-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.status-btn{padding:9px 6px;border-radius:9px;border:2px solid var(--border2);background:var(--input-bg);color:var(--text3);font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;text-align:center;transition:all .15s;line-height:1.4}
+.status-btn.sel-ok{border-color:#22c55e;background:#052e16;color:#4ade80}
+.status-btn.sel-warn{border-color:#ef4444;background:#2d0a0a;color:#f87171}
+.status-btn.sel-merged{border-color:#3b82f6;background:#0c1a30;color:#60a5fa}
+.status-btn.sel-absent{border-color:#7c3aed;background:#1a1040;color:#a78bfa}
+.warn-inner{background:#0d0909;border-radius:8px;padding:10px;margin-top:2px;display:flex;flex-direction:column;gap:10px}
+
+/* FIELDS */
+.field{margin-bottom:0}
+.fl{color:#94a3b8;font-size:11px;font-weight:600;margin-bottom:5px;display:block}
+.fl-main{color:#cbd5e1;font-size:12px;font-weight:700;margin-bottom:6px;display:block}
+.tog{display:flex;gap:6px}
+.tb{padding:6px 15px;border-radius:7px;border:2px solid #334155;background:#1e293b;color:#64748b;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;transition:all .12s}
+.tb.y{border-color:#22c55e;background:#166534;color:#fff}
+.tb.n{border-color:#ef4444;background:#7f1d1d;color:#fff}
+.tb.w{border-color:#ef4444;background:#7f1d1d;color:#fff}
+.tb:disabled{opacity:.5;cursor:default}
+.ti,.ta{width:100%;background:var(--input-bg);border:1px solid var(--border2);border-radius:7px;color:var(--text);padding:7px 10px;font-family:inherit;font-size:12px;direction:rtl;outline:none}
+.ti:focus,.ta:focus{border-color:#3b82f6}
+.ta{min-height:54px;resize:vertical}
+.sel{width:100%;background:var(--input-bg);border:1px solid var(--border2);border-radius:7px;color:var(--text);padding:7px 10px;font-family:inherit;font-size:12px;direction:rtl;outline:none;cursor:pointer}
+
+/* TOOLS */
+.tools-grid{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.tool-chip{padding:4px 10px;border-radius:20px;border:1px solid #334155;background:#1e293b;color:#94a3b8;font-size:11px;font-weight:600;cursor:pointer;transition:all .12s}
+.tool-chip.sel{background:#1e3a5f;border-color:#3b82f6;color:#93c5fd}
+.tool-chip.na{background:#1a1040;border-color:#6d28d9;color:#a78bfa}
+
+/* GENERAL CARDS */
+.gcard{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:12px 11px;margin-bottom:7px}
+.gcard-title{font-weight:700;font-size:11px;margin-bottom:10px}
+.ibox{background:#0c1a30;border:1px solid #1e3a5f;border-radius:7px;padding:7px 10px;margin-bottom:9px;color:#60a5fa;font-size:10px;line-height:1.6}
+.sec-label{color:#60a5fa;font-size:11px;font-weight:700;margin:12px 0 7px;padding-right:2px}
+
+/* SUBMIT */
+.submit-area{padding:0 12px;margin-top:10px}
+.submit-btn{width:100%;background:linear-gradient(135deg,#1d4ed8,#1e40af);color:#fff;border:none;border-radius:11px;padding:13px;font-family:inherit;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(29,78,216,.35)}
+.submit-btn.signed{background:linear-gradient(135deg,#166534,#15803d);box-shadow:0 4px 14px rgba(22,101,52,.35)}
+.save-btn{width:100%;background:#1e293b;color:#60a5fa;border:1px solid #1e3a5f;border-radius:11px;padding:10px;font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;margin-top:7px}
+.hint-txt{color:#475569;font-size:10px;text-align:center;margin-top:5px}
+.signed-info{background:#052e16;border:1px solid #166534;border-radius:9px;padding:9px 12px;margin-top:8px;display:flex;align-items:center;gap:8px}
+.signed-info-txt{color:#4ade80;font-size:11px;font-weight:600}
+
+/* MODALS */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:200;display:flex;align-items:flex-end;justify-content:center}
+.modal-box{background:var(--card);border-radius:18px 18px 0 0;border:1px solid var(--blue);width:100%;max-width:480px;padding:18px 15px;direction:rtl}
+.sum-modal-box{background:var(--card);border-radius:18px 18px 0 0;border:1px solid var(--blue);width:100%;max-width:480px;max-height:88vh;overflow-y:auto;padding:18px 15px;direction:rtl}
+.modal-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.modal-ttl{color:#93c5fd;font-size:15px;font-weight:800}
+.modal-x{background:none;border:none;color:#94a3b8;font-size:20px;cursor:pointer}
+#sig-canvas{width:100%;height:160px;background:#1e293b;border-radius:9px;border:2px solid #334155;cursor:crosshair;display:block;touch-action:none}
+.sig-actions{display:flex;gap:8px;margin-top:8px}
+.sig-clear{flex:1;background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:8px;padding:9px;font-family:inherit;font-weight:700;font-size:12px;cursor:pointer}
+.sig-confirm{flex:2;background:linear-gradient(135deg,#166534,#15803d);color:#fff;border:none;border-radius:8px;padding:9px;font-family:inherit;font-weight:800;font-size:13px;cursor:pointer}
+.sig-confirm:disabled{background:#1e293b;color:#475569;cursor:not-allowed}
+.sig-hint{color:#475569;font-size:10px;text-align:center;margin-top:5px}
+.sum-sec-hd{border-top:1px solid #1e293b;margin:10px 0 6px;padding-top:7px}
+.sum-sec-ttl{color:#3b82f6;font-weight:700;font-size:11px}
+.sum-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.03);gap:10px}
+.sum-k{color:#64748b;font-size:11px;flex-shrink:0}
+.sum-v{color:#e2e8f0;font-size:11px;font-weight:600;text-align:left}
+.issues-block{margin-top:9px;background:#1a0a0a;border:1px solid #7f1d1d;border-radius:8px;padding:9px}
+.issues-ttl{color:#ef4444;font-weight:700;font-size:11px;margin-bottom:5px}
+.issue-item{color:#fca5a5;font-size:11px;padding:3px 0}
+.modal-acts{display:flex;gap:8px;margin-top:12px}
+.m-print{flex:1;background:#1d4ed8;color:#fff;border:none;border-radius:8px;padding:10px 0;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer}
+.m-close-btn{background:#1e293b;color:#94a3b8;border:none;border-radius:8px;padding:10px 12px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer}
+.sig-stamp{background:#0c1a0c;border:1px solid #166534;border-radius:8px;padding:9px;margin-top:10px;text-align:center}
+.sig-stamp-ttl{color:#4ade80;font-size:11px;font-weight:700;margin-bottom:3px}
+.sig-stamp-sub{color:#64748b;font-size:10px}
+.sig-img-el{max-width:130px;height:40px;margin:4px auto;display:block;border-bottom:1px solid #166534}
+.missing-box{background:#0f172a;border-radius:18px 18px 0 0;border:2px solid #7f1d1d;width:100%;max-width:480px;max-height:75vh;overflow-y:auto;padding:18px 15px;direction:rtl}
+.missing-sec{margin-bottom:11px}
+.missing-sec-name{color:#fbbf24;font-size:12px;font-weight:700;margin-bottom:5px}
+.missing-item{background:#1a0505;border-right:3px solid #ef4444;border-radius:6px;padding:6px 9px;margin-bottom:3px;color:#fca5a5;font-size:11px}
+.go-btn{width:100%;background:#ef4444;color:#fff;border:none;border-radius:8px;padding:10px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;margin-top:3px}
+
+/* HISTORY */
+.hist-empty{text-align:center;padding:36px 20px;color:#475569}
+.hist-card{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:12px;margin-bottom:7px;cursor:pointer}
+.hist-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px}
+.hist-card-mgr{color:#93c5fd;font-weight:700;font-size:13px}
+.hist-card-date{color:#475569;font-size:10px}
+.hist-stats{display:flex;gap:5px;flex-wrap:wrap}
+.stat-chip{background:#1e293b;border-radius:20px;padding:2px 7px;font-size:10px;font-weight:600}
+.stat-ok{color:#4ade80}.stat-warn{color:#f87171}.stat-neutral{color:#60a5fa}
+
+/* DASHBOARD */
+.dash-title{color:#94a3b8;font-size:11px;font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:12px 11px}
+.kpi-val{font-size:24px;font-weight:900;line-height:1}
+.kpi-lbl{color:#64748b;font-size:10px;margin-top:3px}
+.kpi-blue{color:#60a5fa}.kpi-green{color:#4ade80}.kpi-red{color:#f87171}.kpi-yellow{color:#fbbf24}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:12px 11px;margin-bottom:9px}
+.chart-title{color:#cbd5e1;font-size:12px;font-weight:700;margin-bottom:10px}
+.bar-chart{display:flex;flex-direction:column;gap:7px}
+.bar-row{display:flex;align-items:center;gap:7px}
+.bar-label{color:#64748b;font-size:10px;width:76px;flex-shrink:0;text-align:right}
+.bar-track{flex:1;background:#1e293b;border-radius:4px;height:16px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding-right:5px;justify-content:flex-end}
+.bar-pct{font-size:9px;font-weight:700;color:#fff}
+.bar-count{color:#64748b;font-size:10px;width:26px;flex-shrink:0;text-align:left}
+
+/* ADMIN SCREEN */
+.admin-section{margin-bottom:18px}
+.admin-sec-title{color:#60a5fa;font-size:12px;font-weight:800;margin-bottom:9px;border-right:3px solid #3b82f6;padding-right:8px}
+.admin-card{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:12px;margin-bottom:7px}
+.admin-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.admin-card-name{color:#cbd5e1;font-weight:700;font-size:13px}
+.admin-card-actions{display:flex;gap:5px}
+.admin-btn{background:#1e293b;border:1px solid #334155;border-radius:6px;color:#94a3b8;font-size:11px;font-weight:600;cursor:pointer;padding:4px 9px;font-family:inherit}
+.admin-btn.danger{border-color:#7f1d1d;color:#f87171}
+.admin-btn.primary{border-color:#1e3a5f;color:#60a5fa}
+.team-tag{display:inline-block;background:#1e293b;border-radius:20px;padding:2px 8px;font-size:10px;color:#94a3b8;margin:2px}
+.status-dot-today{width:8px;height:8px;border-radius:50%;display:inline-block;margin-left:5px}
+.add-form{background:#080e1a;border-radius:8px;padding:11px;margin-top:8px;display:flex;flex-direction:column;gap:8px}
+.add-form-title{color:#fbbf24;font-size:11px;font-weight:700;margin-bottom:2px}
+.add-btn{background:#166534;color:#fff;border:none;border-radius:7px;padding:8px 14px;font-family:inherit;font-weight:700;font-size:12px;cursor:pointer}
+.cancel-btn{background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:7px;padding:8px 14px;font-family:inherit;font-weight:700;font-size:12px;cursor:pointer}
+.today-status-card{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:12px;margin-bottom:7px}
+.today-mgr-name{color:#93c5fd;font-weight:700;font-size:13px;margin-bottom:7px}
+.today-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0}
+.today-label{color:#64748b;font-size:12px}
+.today-val{font-size:12px;font-weight:700}
+.today-yes{color:#4ade80}.today-no{color:#475569}.today-partial{color:#fbbf24}
+
+#print-area{display:none}
+@media print{body>*{display:none}#print-area{display:block!important;direction:rtl;font-family:Arial,sans-serif}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <img src="data:image/png;base64,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" class="login-logo" alt="Globus"/>
+  <div class="login-card">
+    <div class="login-title">G-Ops</div>
+    <div class="login-sub">Field Control | מערכת בקרת שטח</div>
+    <div class="login-field">
+      <label class="login-label">שם משתמש</label>
+      <input class="login-input" id="li-user" type="text" placeholder="שם משתמש" autocomplete="username"/>
+    </div>
+    <div class="login-field">
+      <label class="login-label">סיסמה</label>
+      <div class="pass-wrap">
+        <input class="login-input" id="li-pass" type="password" placeholder="סיסמה" autocomplete="current-password"/>
+        <button class="eye-btn" type="button" onclick="togglePassVis('li-pass',this)" tabindex="-1">&#128065;</button>
+      </div>
+    </div>
+    <button class="login-btn" onclick="doLogin()">כניסה</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen">
+<div id="app">
+  <div id="header">
+    <div class="hd-row" style="display:flex;align-items:center;justify-content:space-between">
+      <button class="hbg-btn" onclick="openDrawer()" aria-label="פתח תפריט ניווט" role="button">&#9776;</button>
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUIAAABfCAYAAACdks5tAAAuqElEQVR42u1dCXgN1xefWLJJrKHUXluprbqgFF20VFtLUWqpvQiK8reEJBIhttj3LfZd9kUEkX0lEkle3suOCFpUW60t939uch9jzLx3572Zl1TnfN/vIzNzl7n3vt+ce+655zJMOZDr+bk1AUMAboCB+G9GEUUUUeR1FyC7twELAfGAW4D5gGqSF3Sq0KxR4K3qSosroogi5YX82gFcAVcBCHAf4ASwkaO8Wn5FtlZeN33qBdyyV1pfEUUUKUvyqw6YDrhCyA/jb8ByfE+ucmv7FXUy9ypUg0aI6gcUjVJ6QhFFFCkLAuwFOAD4h0WAxYA9gAayFXyqsEI13yJHs1OFjzEJYnQMvd1C6RFFFFHEVORXCTAMcIlFflqcx1NjOcuv7V/0rqXXzUQtAWLA35cRQmZK7yiiiCJyE6AVwB6Qw0OAuYDv5Czfzq/IpoZv0XrQAp+ySRCjYeCt8f+VfrCbHWIDaA34CNAL0B/Qm/z/fUAbQK3/8liF968GaAvoDvictM/HgHYAZVHt39uvFQENAF3IeO9F+rgjoCGgkpwEaE7sfzd5CPARWRixlHMaDFrg5EqnC29xCRDDwutm6uK0B5Ve046vCRgO2ACIAtwDIEo8AuQDzgM2AewJGVhTlFsJEwYFKpaDNqoM+AKwDBAGuEvRNr8BzgIW4R+RxPWxpWw7IZibuC5WEn6gdZVjYWC+7wFcATGAv/T0azGgkIyDjYDJgE5Gj9PErLwfU7NyCngIEOMcoJWcg/zNwKK+VkB0fASIgbXDViG3ur5m5FcFMBEQAXgmgvho8QQQB3DXUYdBlHnVKsN2ehewi5L49CEFMEEKjQLyKJCgPvgjdof8+LcChmKiMaAuRRRlOUrUHxl6yhkuIq8KRAG4ItGY/xMQLPql4rIK3o3OzImPUWWj2MxslJv3EgFid5hxANlscvUCinrY+NyMESJALer6F7m8RgRoB1gBeCAD+fEhTUddFlOkv1NG7YSnRedkapMswGdG1K2qjP2Ff8wegBoiZhM0+Q6SSCt/oqecjpR5dQDEy9G31C8UnXWtckRm3tqLGdmPIzKyUZQqC2EyTNZka0nQG/CmXIO8cWDRp1V9isL1ESBGVd+bgY5pDyq8BgSIp6FzAL+biAC1OKGjToco0oeZuJ1qAw6aqG1WGjKdgjSdTVA3PPX7gKIuPSjzay1B37yjpww8s7GkyGcS0YblaDdfqpeJ0BS0O5+RnXYuLQuFpWehcCDCSADRCv/Mys2dIJMN0KxBYFF/W5+b8TQEiGHtfTOp84U7tq8BCeJFj0QTE6AWS3TUK5ki/WYTttOXgJsmbp9jYu118PwYE9UNfzTb6KnLT5RmksoS9M8QPeVoKPJYJnObuet9kQuZ+SNC0rL+CLmahUKBCM8DEV7MyEJYK4zJzElKzM5vKbn2F3TLsmFg0c/WXjc1r5LdDV0kmPJZ+K+1XwMS/BbwRxmRIMYwHStz/1Ckn26idppXhm10QGRdV5mwbrEAMx11WWeMeUTkezvpKcdHT/r/maC9Rut8iVBV/vzAVE1xEJDgGcBZIEKiFRZHqXM34OmylAO7xZnbzd8MuLW58unCu8JaHz8RVgES7Bf1W53XgASnGNiZz4i2thfggMmIGPnxQFoO2EfuP6bIq71A3ZpR1uVTmdvIDLDDgDbCmuMRsiKMV8qnAZzxj5HY2cTmN0dEnQNMTNQf66jLWWPMIyL76qih2hjc+0TkomAC8aKYC5iJZzaAnYAkwFMd6d4XfIEzqvx5filZKCBVgwJTs1AwJkLAufTs+1Ga/AFSDeo2IbfNmwff+qGm380wILRi2ikwGzB1jusW9qvda0CCcw0Y8ElkJbkmZRmVidvBAuJKwCXGp0LTPqKp0tSprswkuFVkG/kBeurRkqzJj0eMGxLWjt+mrHeunrxwP3iygAk7GGtmlFo4F8t11OWGMeYRkf2VYog2hl13ADmU7+qjrx9Ifl8RYrzNSc+/6h6SWdDXK1nzzCdFg/xSMBFqENYKQ9NzMiI1BZJMhd8OudXlzYCiPeZehfcMIT8tavoV+XcPu2P5GpDgCJEDPRvQT4JysT/ZSPKjw19ftY5n51PU667M7SRminkNO02LzB8736aKKOM8RZ7WxI9Np5uOjvSWxPn7vIh6nRTIq5ox5hEDFvv0zUA6CaSdSVnPXwyoFzbxfEM+kNm8D9nH3Ki8PiK58PQVDfK+gomwVCsMzcgNis4qsDamYdqG3u7YJOjWWpjG5tNPfW8IPtMw8NYax7Q/XofV4c4iv/q7aFbaDKjHG3jxQcf9/RR1i5KxnUaKaKOLtFqywCp0toiyuurJrxNFHkcp6lWBfLAMJmjiYoQMNY+IbMeWFOVUEXjPPIq0WySoY1XeG18cDD+4+2ISOpWsQV5AhFgrPKvK22KIb2DPi79Wah96u0+ToKJdMH3NN0bzY6Pi6cIHbc7eHsm8BkK87nNF/OhmlWFdaVaxd8pUNnbD+JuyjYIM3a3AKu89EfapU3ryGi2V8zKZ3hlcJ7g+jiLtUyl2sUAeA/SUkyeQridFHfFYkMccNim2qKLdgp1PlvhFoJNAhKeTNcVnVfnzqTM4VWjW6dydTm1CbjvXCyi6YH668A+pyE8LG++b6Z0v3GnLvCYi0ug/owzraUa5oDBThrIriXAliqPZKihx32D/tmo68qFx//iOsk6tKOu0USC9B0VatUTt56CnnACBdCso6nhWtsHe53DkLmbkQlR98jJkfzLsmVdKtqAbRFOfvCod/PM/bhtwzb5ZwI1ddXwLE81P3/hTauJjo0Fg0c7XwR7I6vAPRJDghjKuaxPKen4hQ9lzKMv+Fdv4JCy3GYVtT69NDe55U6R/h7JOHSjrM1IgfSBFWm+J2k+f8/0qgXQXacxDsg32Nxbt+gcTITNqMWLGL0XMjE2PzBcdLLBa7p1ms/pMmu2mixnWW2NumG9P/IPZdQUxnmmIOahBzJFcxBwvQMzJ6xKR3st2QUuvwsIOoXcG4J0rgE8AkwFrAccBkYBUwExAxX8ZEUZQDupLUm64N7Cu/Sjr2kjicmsB7lOWPaQM+2iLjjw0Ujkvi9jr3UAgPY3tzU2itrukp5xxAukKKep4WpaBPiwgZWgJAZYQ4SLEjHNBjP1axMzdhZjFRxCz1AcxK88gZn04YrbEImZnMmL2XkXMgUzEHM5GzLF8xJy4LrkW2PvcDVV6Tm4UkNwDgQAPiYB/3VSZREVBlPaaDuWgvrMp6vpAhnLXULZTQBm+N0aiQHpLCltjmoj60DhDx+iwR9O8ywgJ2g0veDzUU04XgbRP7Oh20EgfNq39Oi8188N8xIwgRDjaCTFT1iBm9nbELDyIGNfTiHEPQszaC4jZHI2Y7ZcQsycVMfuACA9hIswDrfAaaIXSEGCLgOvodFo+EiA/bZgvBxwM1pSEUMUxwgwwGmCsMf4M5aDcXE6Iew/NjgaJy6xOaZd8qm9bmRF1oN0jfF8gfXtjF1tYeZlTaktDjDTFdJKg3d6iKKcqT7rKIsxF+yXt7O1ptypU+Xnds1IiXICeT48nLkfMzC2IWbAPMUtOABEGIGbNOcRsjAIiTELM7hSYHmfA9DgLMUdzCREapxXaet9Ai+MLuFFtuEgGmFxLqrEksoetU0QCkOBDIwdJG8qOfiz1VNOIOsdS1HevxGXSbq86JuN724r4YfL9sIdRpHOhrAvNHuFoIcdxytXrYikWmyic7wt0pBWzywfHFpTGhW508NUJzA/zUAkRYjyfHi9FzPSNiPnfHsQ4HkXMMl/ErDpbOj3eGo+YXXh6nAbTY2wnzDHKTmgG+CH8GkrOztNFgM8ASwGVTUkCbyyNfqvGkqhTQICIINXIQeJO2cme5WgqTxMCbK7EZWZRttOHMr877W6TJjxpXaRwXiY+efpspbiPmhs57nIkarO5hq76wr2rIjcX+NOGINMpXbcFXmKG8xDh2CWImboWMXN2ImbRYZgeeyNmZTBi1l2E6XEsYnZcLrUT7sfT45wXdkKR0+OuIddRcIZOAsTQALqamABr2blErbVxjPiHRYII/t5mxAAxExGg86NyQoL1KevbT8IyaaekKSZ4f9qtXi150p421nmZuMzkUcwe+urJx1eykFT628xTTznrdKTdZMCWQvyb6mlUpWvO23GbGTYXPSfD53ZCR8RMWV1qJ1ywHzEup2B6HIgYjwuI2RRdOj1m2wmP5omaHncKvo5OXM3XR4AY2+Q6+5hPGrrH2NZ2jXaxcYr4nU2AWlRzjhxkxAChtdNklyNtsLehGpERZXpQljnfBO+fTFmXDjxp0yiCZVgIlIvtZT9TTBVxmPqvJCL0VRK1WYKecibqSPuZgYEmislikvip/fSYGxZm41yfvEyELDvhhGWImbkZMfP3Isb5BGKWYzthKGI2RiJmWyJidmM3mvSX7YR6Vo/fBQI8mJJHQ4CFgL4mXAgxBy1wrq1T5B0+AizRBp0i7rVYHWdlxABxoOzUVeWICGn2fT7UFdTAgDLTKduplQneP9eQDwFldGYN63lrcgBRX+JUTBNnERNtO4p3sKTcKTNGojbTR97d9cyaYg0kQ0TclT4WVeGPTlzqz3z/C3qJCF+yE7oiZvqGUjshdqNxY9sJ41h2QvULO6EAEfYKvY4OpVJpgBgnASY596LZqjjrum7Rc2ydI28IEaAWdq5RG40cIGGUnfl5OSJCmh0WlyQsryFlG+WZ6P1pA7/W4KR7x4gfM80Ws0Ui/A87Uub7gQTt1YiinJp68nif0o1Gl6a9jDq4rNlSr1EvESF3evyjE7ET7kCMwyHEuHohZgV2owlDzOYYxOy4xLITZr9iJ7T0KkSDLhSgE6k5KDeXigD/AkwyxQBv5B5rU88teh4Q4G19BEjwGLTBt4wYIJUo98s+lmqbmEREEG5KVwYRkXg8TfT+ND/IJ9wQ/vD3YJnOJ8G+lfVkalMbCdqrj54yiijzmS5Be+Etl031E+GKgK+YoUCEXK2QbSectAIxs7Zx7ITnWXbCFMTsUwERZj23Ezbxu4amReah4LSckkOe4gEpmhx9JHgZ8LbcA/utlXG1gABdbJ0i7lISYAlqu0ZtMXKAtKfsvASmHAnlaXDzJSyP1j442QTv/qahBwDhQAoSEmAUcZ+pbuB7LKVZcJCozfQ5oZ8XkZe7BG33q/6p8qnCSswk96JXiZBtJ3RDzM8bX9gJl/kjZjVMjzdgO2ECKt1ul45qHFWjb0Ny0KbEnJJw/uGsQ54wESaos1F2riAZbgBYyDmoG7rHNoMp8A5bp8iHYggQA5NmY/fYOkYOkHGUHbe9HJFgXco6D5CwzHDKMjub4P0/pqxLKE/aoxISYSxxSWlq4HvQrF4HS9Rmuw0JCKEjPycJ2u+x3mNDKyz1asdMWFoobCd0Qcy09Yj5326WnTCkxE5Yf08i6u+XhlbGqEujWJNw/hdKzjYpPeQpmhz9ickQn3p37WUCvAcYKK8GGNvtDbcoHxvHiKdiCVCLBstiJkgwQFaW9ygzPHX+hLLOLSQs81fKMm1N8P6TDQ2KQRGd2dCVUewG857I91BR5O0hUZtF6SnH3oA8R1IeM6HPbqj7fBKz1SGVK8zZMR+0w2TQAv/h2gnNpqxBVR08UXMPP9T7QASaHnQZ7Y1XId+ULOTPCufPPeSJTyvU5DwnwXhAUzkGcOs18ZZNVsROquUSddlQ8tOipktUEELITIIBcpKyw74uR0RoTxmyvqJE5dGe/3vLRO+/zZADgEgU5McyLpYgonnZUryDuZ4zO7SYIFGb6XP87mVgvu+LcLLXtR2T/nzqt9cHNHc6eznIJfTys1UXU9BuIL1DlzToyGU1Op6seSlwqy8rnD/nkKfnR3+ytcLL6hysFeJgr5JHVGm5Oq5pY/eYdVWdI+8aS4AlU2LnyButPRJqSzRALhnqj2ZEmY5kpVoXPHSk30xR32QJ61uu7KgifAjf4aRrQen64kxWNzHhngJcN8BVpLmed2hHmVc3CdqLxvm+thH525CDyIwhQ3xmiX6PFC/V9Y57LmXn7IhXo10JarQ3UY32J6nRQSDCw4DjlzXoBCZDEs5fn1bIPhA+LjP7n6SsvJ+kHKzvbUwyb7k6fkRdt+gLQF7PpCBAsoPkSbNVcT0k/FHRDnIpY+rRkO9OHelp3H2OSlhfWmfaIBOQYE3KeIS/cve7UkRn1hWPryVZMKI9vuG6rjFDcbawFtVN0H+/SdQ3uH2LjCBD3XbK42nXxm+OU/+9JT4TbQfsBCLcA0ToCUR4APBcK7wsXiuMycy5lpSdL9m+0DYe8e1g+ru1unPkb1KRHxuN3GMmSPzD+tNUA5KUZ3RUacrB5ihhGw2kbKMTJiBCWgI5zpPWwVjnZXwyGyCDsg7RQsEHiNapL/0Nidpshp5ywiXsnxqAgwYS4V+C55UculqwZF1MZvGG2Ey0OS4TbQMi1KUVloTzp9QKozJzYi9n5xs9xWy7LuFN0P4WvrE0KqWKYziSgwAx6i+Ldpfhh4VMTIS0UaV769CIaNIPkrCNxpQXH0IRP7JxPGkPSBEsghwkpaGsxyiBPI5JcRqfRDbVbTL00w8Gnkv96vEIB68WOK6OUSGPmEy0DohwI0CsVugnoBVGZuYeNOYw+DZrE6q28UiYBOQUbuNEs/JrHEHCFHunFIsjRhBhE4nKo40qLRTNuAdl+tYSttEoY46rlLAeVQB/ULpl1DTQJFGVsi4fGmM3JWdfmyT0PcWK8RSZ+qudAfbVl89+PpZ+/duVUZnPVkWr0BpMhICNceK1Qp4D4Z+GZ+Yb5GjbcnVcjXbrEqY1dI8JtXWKeCSOzMKNIcH9S8/nV5Cps2g7qItE5dGc9fFAR3qa+HfUYeZF2H5o2uiMzERIq5n68qSlic5cILI+ZynrU8eAVVyMRRK0WSUy5TT46FMjy29KeXj9q/EzfTNvVFwTpylaHqVCK6IykVYrXB9bSoYGa4WpWQ/D1AWizpB4b2NS0/brEuY1Wh4TAZrfE7lJj4t6y6I95SJB0lF/GzrVMrA8o6JKU4aFT5O4jWgXSzJl7CdsW71iqCM5ZXTmYBk+aq/sUSdRvkW7/8i04v+M7xxjifuuhwgifBEZ/EDatXGukSq0DOAenYkEtcIEeq0QNMK7QILd9VX6y90plTpvSfq8jUf85rpLozSGEZg0RNhgecwmOUmQdJKKsoO2SlQeTQSPPUZqISckbqMWdvQ7BSxk6idak0IW3wIF9gOlSLtWpoWb4Twr0CbZGQR5TNVTxmXGBCIics0LO/OWpJydLkCCbgBdWqF2eqxPK/S/ml1wXnNNcL9w1y2XOr67MdG56Yq4i9WcI/+Sa7FDDEE2XhHrJIdN0IjpTb5E5dFElf5FR3qaacYSidvIgtL5V5bAtWR6RxsheapAHnMp0k4UWa/xBhJhFxMSYbChwVgl7sMNom2E328LOjAnIB7RaoW7sVaYxK8V+qRmZ59TX6uvzfuDDQmVP9qS+HmnjYnLm6+Ku1jTJfJeWZMeZ//wP6094n9kTCTQ8KtFqO2fGFkWbSirfgLpqxl7nq8Rdac9zH2pDGXPFaENmgvk4Sm18zKlmeKVc6XxLg7KdH2NbLdq5KB7XWX0N9HvbAXlO79wjxtz/NK3dYf8D83wihalFe4jWiEmwmOgFR5IzNR8uTl8SNtloYtbLj3nU8/pnMZ2YeiTKg4XUJXFF5Gcri6G5A3a6K0O6xN7MSYUkWGZgo0sy6io0iI0ifZl+EXPkezgnhc2Llon5sE68kmQ2kVKxL7lpgYS4Sgj207fnmy8eGRlot/Zccp3fjmgbZVvZhdb9PgRNRntjHot2YuGbQ9A009EoLk+sWiebxxa6B+H5pyOQjOOXkATPM+iIRt9UZ+Vp9BHLkdR63mHkN20fU8tf9qHrKYdRVY/n0bWv/gi67mBqMr8s6jKQiDCRWHligjtXKMv99yRbPLT4Yhfnphgk98YURZNVOk/dZx4RhMp56kcB8+LDNU+VKIya4nYxxpgpEmiSGTdulHW6zeetN3l1q6JOSGLemFC3t8YXrG/Q+NA/srYbzx+xd+Vu41Clbv/iCp/DOgxFlXuOQ4wHlXuNQGZfzqpFJ9NRuafT0HmfWYh84GOyOJ7d2Qxcj2yHLcNWU7yRFb2h4EITyLr2T4lRGg9LwSI8FwpES6WkwjpCbKxe8zuz3clWzJlJPhHJDKOWiMDy9lJkX+SjvQ0MQHVMrURDlhwi7KNco3VNEighzhassGhyXTk1UhK52USMCGesm6HedLTOtVHGdF+0yjy/8pEv69hlO/7qr2ys+OBq5W7jSwlQoweY1hEOBGZf/LTy0T45c/I4tuFyGKoGxChB7IcuxVZTtyDrKYeRFYzTiCrWZgIA5D1/86gKgtCURUHUxCh7vyrOkc+aLs2YTRTxoLtJCKdPrMM2XsMaSKMiSoN9wIp0nvL2E6LRLTRHiPKeYPS4Vjr/qHvpLg+FPlsoKxbHewvKaId+gtoa3/LZeYgZ3Tr29Wh1rH9r5VUcSUhHztKp+pi3k0Ag/dGjH5Ogi8RYSkZmn8ykRDhT6VE2HsasvhmAbIY7IosfliNLH/chCwn7EKWk/fD9PgYsprpBdNjfyDCICBCMj0uQzvhG25RCV22XGrJlAMhPmqXDYiwO0BkOUZFlaY4PhLDTcZ2qk7pCPw8gIHYUGBYSxG5cX8eRZ6zKfKZoufH/C3R6P8S+cGsZOBq7vOdKWKOiCBnstAQz3cUJpwYwPeGOueTj0aioZrzc6k+aN6zyt1H0RHh51OR+VdzkMUgZ2QxbAWyHL0RWY7fgUrthEeACMuHndDWKeLJt7uTjuXl5sy6np/rAGhQTsjwEzvx+yIRiQQzSJ9dTkRU6W8F0ttQpsdOx94SYhSnHlMMaJ93Kdq/p0gTBYY7Zd/SmCTiWO8cSOqdKuIgeVGr9yIio2sJqZWed7TCbleU+3uD9OS1nfP8XRJnsQ+N/ZmcFPijCFPKA53mpg8dPLPF2QlnIvMB2E64HKbH62B6zLITzuCxEzqY1k744frYJxeS1Tj462PACkBVphwJDgNkxKDHK3ChgPVkQE4mAVSdSKAA2oglzQXq9oERdTMG43kM3xcMDGvvSjbj9ycfjxmEpPIMyG+DiH6NKoN286KwM4rZh/uMaJHziSP3FyQq0HQSTIKWsK/riz2o51iGR6Qv15MxPpB4Qwwi430viS0oyQejRCYejx9s3mucCDvhjFI74RA3ZDHCA1mOwXbC3aV2wunHkdUsb2Q9x/R2wlpLIpGzfwrKzyuJgO0HaC4Hkc3yVTVzOZtlbgQR4sEZWUaEozOqNN5uVUZ16iYw5ckvo/o80xWiTKDt7pu4jimUUar7m7hedyjPW75rwjq5UHVikwmr/qGeHve2RxbfzEMWg12QxfBVHDvh0TKxE/bbmYDi0jSYALPlPBh+hk9G/V/8Mn+SQCusJuKcY6mRrKNe7mVUp+o6DPLXTVyXQq5zMkV/vmniOoaLifZMGW1cCtyiOR9ZhAlHCjhTd2TfdQGHhYiQd3r81S/IfJBTqZ1w1AZkOW57qZ3Q/ohJ/QlbroxGnuHp2mmwG0A2x83Zvqq3pntnxDgEaaSKGWgu4lwMKXFYR518y6A+N/S0UzMS2t4UdTlCFcr91Tp+aqL6YV9UN7E+nMQtab/MdUui9XIQ4extDO7rcn7nlanBWRXthjk+E2cnXIwsvl+GLEauJXbCvTA9PlzqRjPbt9SNRiY7YW3XSLTYNwVl55QcEXoR0JqRUX7xVX1t75V+b65/5ngZbIa9RQTglAKOOuqSUwZEeI6ijayIbbVYpjpEGrN/mSI6sxTmjD36ziih8Fr4H8V2OLF4RM5OthBRF3uZ2wvvMKlvUEN96eF3XJydcAGyGLIUWYxYgyzHbCm1E04RshNqp8fGEWBVpwg04fAllKzKwgT4ADAZIFvQhKmn0yvP9FGthH+L4V8vuQI0EJ+vEZRbtAw5vSuWHCmKo6PYCNTBktjGTE2EYhYk3iHn9D6VoNy/iQbYRYL+2yZDn6nIYUU4YG01CcdaG7JqLUX77TAkmDAO2CHDOMJRiQ4DOhn3owet8I2RLk+o7YRfz0MW3y1BFsNXltoJsRvNczshnh77vWwnNGJ6bAMY4pmEolI12uNAQwCybpX7xU/13jTvjKtAggj+1SwK1lRjTCBkKogDAPgYcEjNfeJTtYt8dbvRxoEjRNirDNDIgDaqS1bNg0WEan9GTqbDbhvfSbn/FfJqK0E7dAV0JKfBVTbBOGtKnNejRGz//I2QKI6IU0MCf9EvSB2OksWff0SO9wLyMRvLFy3cYBm4NWRFCQnSTI/7au2E7shi1PpSO+EkrZ3wFLKerbUTsrbbiSRCTIAD9ySgsCtqLQH+CZgkpxYI01/b2b6qtUCAT0pI8HT6b84hWa2ZMhKyF/Zdos2NJoPwZxJJeQiJoddeSq3h3yTE/tWY7FPGWvUE4qw7gRwO3ofsYrBgFNHlk9eeOJqPIeNrJokz+AOxgTYwUV++SY4oGEDqMoXUZSYZ+wNJYJDqslam1fSN914lQoHtdv0XIYuhy8h2O2wnxNvtDhE7oY/BdkJbmAIP2JOITiVkomRNDsordYlJBMi2SwRIz2yOv+rHaV7pRZgAMexPp//hEKTpqvxUFFHkPyaTTyd3tO03q1ivnfCL6S9vtxuzucSNxmrKgRfb7eZgN5rg0ukxRVguO9cINOrwJeR7SV1yIHySOhtdUmcXp+fkegAJyjZdmOev7jXDOyNeS4AlmqBX+r3FwZqeyohQRJH/qPT18D3wwkYotN3OHplr7YTDVnK227HCcmE7YYkbzXnB6XGr1TFojs8VdCYl6/mB8JgIE9TZv6dk5w2UjQADM9vN8lEFswmwlAQz7gIJvq+MBEUU+Y9Lm1lb7+i3E85G5gOdSsNyjdIRlmv+q2G5ai6JRF/D9Hd9WPorB8JHAxHGZeakJmblt5Dj3eYHZLaf5as6BaT3lEuC070zsh3PZL2jjABFFFGEmXzqkl3VwQ5F+u2EDiw74VZiJzz4sp0Qu9EsDEVVgQg/2hyH5gekoNOXNbwHwkcAEcaqc/2u5uRL7hy9MEjdYbavynfq6bRiLgFizPRRRbqGZtdWel8RRRR5Lp2Xerez6DvrxgsipAvLZTX5hZ2w9oJA1HNjBJrtnYwOJqhKjv70FTgQHmuF0ercjVKvCjsEq78EDfA8ECDiI0CMuf6ZO7bHXjNXel0RRRR5Rax/2mNtOXjJKvMvp9/iDcvVbw6xE5aG5ao1dc+9D9x8Hw/fE4FcQ66gQ0mvHv3pm5KF/FkHwmu1wih13nyp6u16NtvcIUg97mdvVaoQ+ZFFkd8dgzXDlZ5WRBFFqMRq5Jo2VoOXjLccuHiZxQAHD8uBjh423y91thu79qeG03b22hqZPnRPouYhzYHwbK0QiLA4XJ1vL4n2F6RuvCAwc800r4w7pWQnrAXO9MmIdTuX/ZbSs4oooogk4qW61nVnguah9sQ7mgPhA4hWGKbOn2lM2UBqFRcHa76b46c6A/9/9jLhvUqE9qfTHzoEaRb4p9+uoPScIoooIon4Zd6w2ZGYVYSP/twO2ElxIDzWCv0A51V5yw0t1/GMpu3CIPXm6c+1P/2Y7acKXxaaXWbh+xt/OG8A4Eue62bk3tcC6b4AdOO5XoHcWwbYDVgLGAOooaMO3UlZWvQFvAuoKPB8I/JcJ4r34+bdH9AT8Dauq0CaPvg5HfdwPpV47vUAfM76uzN51o7zXCdOnTA+AbTjy5eVzponHRvNjBwH/USmaQ6YDdgK2AZYAGhPmbY+YCIZH56ANYD5eCxyxwr8XU+ov+GaFWA8KR/DGY9ZgA1lm3FRj6SrRv7uruMdbADfAVaSsb4JsJhcayrQXo6AvYB1gJ8B8rnFHUrJ3/zSgfCUWmFweq6/aNtfaFbzRcEa11m+Gam05IcxwzvjhnNI1o9yBU4QMZhVgGc8gw8TBSJ4g3OvJkmzjnO9JSCZpHkCuA74i/x9DzBKoA5hrLLYyMOkxfP8GHLfk+L9hPLG+B2wAVCVkyaU3G/DuV6NvDfiDmBM2oD7gJOsa97k2V6cZz111Okh4AC3zUm6JjrSYcw0Yhzg9Pcpn61I2k3bFr8Cilj1OIwJSEfaFYDH5Nm/ST//zUrvzUPSr/Q3IVMVufcn4C4rjwGUbcaFNl1H8neYwHuMANwhzzwmY/0+K5/7nOd/YL1zEev/92X7cW9PzM4XOhBeSCv0Sc0qiNJcowqj73I26x2Y+rrN9lVd5Sc6YTugvVfGw4WB6nVrwvJsyoP2TL6izwcA6/pEVqcO4tz7nlzvy7rWgDUw3LTESgb+INa9kTrICufbBTAEcIZcu6v9uhtJhN+TwY21tm9JHX8l966wy4D/LyLXp/Fog9o2mc65141cnyiCCGeROmGt9SuAA6CA3Lum1U54iLCQpOOitomI8BB5PgZr7qzrLQDB5N45Po0eru0k93MB32ifIeMEv8NCgBMlEZ4g1x20mjRpo18AH5C/zXnayZGkO8Rzr5o+ImSNP/zRmsIZO03ItSOsa7XJs7dZ9aoE+BiwXLYf99bE7GvrYkqJ8LlWCES4G2uFSfxaYUhmgeDpbEBcVq6h2UMcgtQHZnpnXNev8fHaAZ8sCFDvWx1WPg5uYnXSENKpXO1uH+tHv4pzbw/gH/ZXH/7vS55dJlDO+4Cn5MtdW4CsOnI0hyxy/TMJiLAjz706LI1iMw+pneQ878ZqkyOcey7keiMRRDiAp05VABHkvq8AEebJMA6oiJB8RPCz2VrS4NzHxBNLnrHn3OvNmh00FFE3ISLEGv0f2Iwj8l3H8I15zjO8RIjNHGQMI1pTAlEE8PObTPrjPny1YJ5HTGaxkFa4j2iFh4lW6JOak8BO73Yu284tNGeEY7Bm9xx/Vao9ifxiCCDt4/mB6mOrL+a2ZsqhkK8V7qSrnOt4oEeSe9Gcezfw9JH191vkuQdCUyLy3BHy3HwasmJpF7IQIcuGqJ2iVWd9rfFg/41tR4T/hwPiyLQ/n5NPPCCDc000EZL7TclHAz/TqpwR4Xny7Fgdz3xKnsniXNd+LBcaYL/kI0I8xSwGvGNCIpxDrgeLKE87k4gWsnvLJtui08e6BSfecAtJQptiVa9ohZ5AiLtiVGhLZAZad1F9cnFQ5t55AZmxM33oFzr0+AM+BA1y16qw3CblfXEJkyDpqNos4zT+ezKZhmHtz4Lca0/uzeGZRnvrKWc4ee4shUZYhRARJoS6chEhi/TxM1/xkHBHlqaD22EpIUN8702WllDMo1UbRIQcwplSXogQ7lsCHpFn7XQ8V4Foas81ZHLtd3LtbYmIcBe5fhNrmyYiwgCuCYSivGpkLON0/tzxbBJZdDJyx6j1px4PXXkcjdzoi0ZvO4NG7ziPRu8OR2P3xaAJhxLRpCOX0U8nUtGUk1eNJsBZPqoc55Asx01R+XbMv0TIahfupCHk76Hk77YsO0xXzhexPSu9O7nmrqec97TTKiGyIlPi91gLFmskWizRRYRawprMujZfa8cjf39E/u5DVvzw/4dyCL6vhES4gTyznIcIH5A6sNHHBETYgjz3G0V+V8izn7I+Foh8MCpIRITVWLMWjGN4AUVmIkwn1z8W+Q6fsj4EeFFlpsm1wxWx1yq6+CVsmLo39PfhGwPQiK0haPSuMDTWMxqNPxiPJh6+hCYdT0GTT6YZqP1l/LEgMPP0ivO535T1KrCBPwLtQNtG/t5IFinMiHsEvvcLuYeN4IWc9OvJM856ynmb74fEIqs/WFNC/GOfx2f/kYEI93MXQIhNs+QLTv6eR1ZJq7I+FB4sYvuHaxYwkghdyTOreYiwmPyY2JhvAiLsSKuRwjMXBVZv7xsxPj157lUiiyWPWCQzUkYizNM3nnTk2RgQwiLuWGNcnoyStefTujv7JSbMOBL7aOzeSDRufxwhwitoMtYKT6XRur/cXRio9l9+PmcMaH/WzL9YiDsM/nGpyN+XAX7k/11Ip50iPlmPeL7My8kzK/WU876A7SiMtYq3gZSBB3RjPQNZKiIMIs+M4CzW/E6A/+8HuETuNSDPx5GPxU22zVQiItzKtaeVg6lxc+1iB0V+qex3h39rsQigoo4PpSePDXmAvv4mdWOTzASZNcJeRrT1UJa7URGNFiuvHTEqs+uqc+mBToFXC2d5p/465UTqsymneKfHxbN9VNcXBKpDl4Rkua++mNvzddsFwvL/a0M0n3kc29hN4qiKnxnOSTuWrT3pKGMUn6GZS1bkC4+IVlFBTiIktqub5Jl3OPf8yfXOREPewLpXQHzBunBtphIRYRyP3bKsiVA7FhCfnyPnI/KQPFefx0bYTiBdLwHyGSCiv1eSZ2/LRISB5PoMI9sbeyyk0SgQJpc9cbl114bnDFhxIXeQ+4WcH1aF5fZbG57bbm14XhXmNRc8zSOdcpBtEyT3tHYYP6I5cndKNCLX/+I6J3OeO8FHGjxEiKc7iXwrzDIQYV9yX82dhhN/NEQcnJ/bBMm9Y6w2QXw7KoxYNW7LmuZVKS9ESJ7T+nf+pOMZbZuqONf9dNmSJSLCSiz3ljoyEKHWRp4g1m2Hp4wfSF6BjCLlhgi12t5T4kpizvOVLRkAekjOQ+B+N0KWWCuoqY+sCBk8IlpXJzmIkExxs7jTYp4fg9ZuWZd1bwarTQr1LMJQEyFZAEjkczMpJ0T4JXk2X+tuxKM1JnEXnzgEibXKDjIRoTmxNWMXJysZiLA2a7fUbF31EEGEBxUGKj9EyN4+dlFgIGK4CqSvS7YZIaJd1iHXLbDxmrWLYxgtWbGmyBnsQc0ayMHkx8PF2zx5T2DdH0DsmlqXhg06ps13BeyaH7DaxNNAIlzEqtPXZJ/qNXLPi2tLYxFhkcB7v28kEf4pkG93zrM7yPPYltyFdb0Dy+0nWMCssZ+l7dqzdiCZkW1rVERIxmsEMcto87Bl2VaPyjE1JvfGsfp+K/loVyDa6LvEuT6D9fwEsgmhB2sHzDsAjdYTQWGg8kWGWk1kKef6G6yO76EjfTPWrgLt9rgn5P+3+EhQDxGyp8ibeQayEDx58uZDotZlSMc7eQu4blRi2cGGG0iEfMCkP0mARPTtm002kgiFcJ/HBujO0pT/ZE1Hi4l/n7UOjc2ds7f4LufvMxREWJ1Tx3ukbO32vmpyESG5P5psmUOs92bXh73hYCbr+iOWj+UTrXvWv1I6f9S9EsACUPE1I8LWRAOoy3OvO7lXSU8eZiS6iyNxq8FRaAazbV0Cg64Xd08xuVeP3OupJQeiffbSgbd58n5Jc8KrmJRt8hZJ05jn3ofkXhUdtr5e3CkkWR3l1ulD7t5invws9by3MRqhrny7C6RpiF2OSOSY1cRc0IyyvDqETJaTceJCHPPbcT8CxAexF9cRm/TNKOLkjvNYQp4z01O2dvw01/GMDXlGl7dBFULSrsTbYQ3ZhNCKh/y7EEJcReo6nb0ds1xJn6+/NQfUAbQEfAD4BPA1YAhgJGA8YAIPxgJGAAYD+gF6At4DtADYASop+qYiiihSLmX46DE2gOaAboD+gFEyYSTga0AXQFOApdL6iiiiSJnJ1BkzawDaAfoCvi9D9Aa0BtgovaKIIorILvMcHCsBmgE+BQwoh/gY0AighOpXRBFFpBWX5SvMAa0AvQFf/QvwGaAZoKLSe4oooohRsmbD5gqApoBegM//hfgYUB9gpvSmIoooIlq27dlXDfABoMdrgI4Aa6VXFVFEEWo5cOREA0AXQNfXCJ0BdZTeVUQRRXTKKZ+ACoBmgPdfYzRQeloRRRThlcCQ82aApoAO/wHUV3pcEUUUeUXOh0e/CWj9H4Kd0uuKKKLIc4mOT6oKaP4fQzOAldL7iiiiCJOUnFoB0ADQ6D+IegDFtUYRRV4z+T9u1S3VFy79LQAAAABJRU5ErkJggg==" class="logo-img" alt="Globus" style="height:26px"/>
+      <div style="width:40px"></div>
+    </div>
+
+  </div>
+
+  <div id="screen-form" class="screen"></div>
+  <div id="screen-history" class="screen hidden"></div>
+  <div id="screen-dash" class="screen hidden"></div>
+  <div id="screen-admin" class="screen hidden"></div>
+
+  <button class="fab hidden" id="fab-add-user" onclick="fabAddUser()" aria-label="הוסף משתמש">&#43;</button>
+
+  <!-- DRAWER OVERLAY -->
+  <div id="drawer-overlay" onclick="closeDrawer()"></div>
+  <!-- DRAWER -->
+  <div id="drawer">
+    <div class="drawer-user" id="drawer-user-info">
+      <div class="drawer-avatar">&#128100;</div>
+      <div class="drawer-user-name" id="drawer-name"></div>
+      <div class="drawer-user-role" id="drawer-role"></div>
+    </div>
+    <div class="drawer-nav" id="drawer-nav"></div>
+    <div class="drawer-logout">
+      <button class="drawer-logout-btn" id="theme-toggle-btn" onclick="toggleTheme()" aria-label="החלף מצב תצוגה" style="color:var(--text2);border-top:1px solid var(--border);margin-bottom:0">
+        <span class="di" id="theme-icon">☀️</span><span id="theme-label">מצב בהיר</span>
+      </button>
+      <button class="drawer-logout-btn" onclick="doLogout()" aria-label="יציאה מהמערכת" role="button">
+        <span class="di">&#128682;</span>יציאה
+      </button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- SIGNATURE MODAL -->
+<div id="sig-modal" class="modal-ov hidden">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <span class="modal-ttl" id="sig-modal-title">&#9997;&#65039; חתימה</span>
+      <button class="modal-x" onclick="closeModal('sig-modal')">&#10005;</button>
+    </div>
+    <p style="color:#94a3b8;font-size:11px;margin-bottom:9px">חתום לאישור. לאחר האישור הדיווח יוקפא.</p>
+    <canvas id="sig-canvas"></canvas>
+    <div class="sig-hint">חתום כאן עם האצבע</div>
+    <div class="sig-actions">
+      <button class="sig-clear" onclick="clearSig()">נקה</button>
+      <button class="sig-confirm" id="sig-confirm-btn" onclick="confirmSig()" disabled aria-label="אשר וחתום">&#10003; אשר וחתום</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUMMARY MODAL -->
+<div id="sum-modal" class="modal-ov hidden">
+  <div class="sum-modal-box">
+    <div class="modal-hd">
+      <span class="modal-ttl" id="sum-modal-title">&#128196; דוח יומי</span>
+      <button class="modal-x" onclick="closeModal('sum-modal')">&#10005;</button>
+    </div>
+    <div id="sum-content"></div>
+    <div class="modal-acts">
+      <button class="m-print" onclick="printReport()">&#128424;&#65039; הדפס</button>
+      <button class="m-close-btn" onclick="closeModal('sum-modal')">סגור</button>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY MODAL -->
+<div id="hist-modal" class="modal-ov hidden">
+  <div class="sum-modal-box">
+    <div class="modal-hd">
+      <span class="modal-ttl" id="hist-modal-ttl">דוח עבר</span>
+      <button class="modal-x" onclick="closeModal('hist-modal')">&#10005;</button>
+    </div>
+    <div id="hist-modal-content"></div>
+    <div class="modal-acts">
+      <button class="m-print" onclick="printHistReport()">&#128424;&#65039; הדפס</button>
+      <button class="m-close-btn" onclick="closeModal('hist-modal')">סגור</button>
+    </div>
+  </div>
+</div>
+
+<!-- MISSING MODAL -->
+<div id="missing-modal" class="modal-ov hidden">
+  <div class="missing-box">
+    <div class="modal-hd">
+      <span style="color:#f87171;font-size:15px;font-weight:800">&#9888;&#65039; שדות חובה חסרים</span>
+      <button class="modal-x" onclick="closeModal('missing-modal')">&#10005;</button>
+    </div>
+    <div id="missing-content"></div>
+    <button class="go-btn" onclick="goToFirstMissing()">&#128204; עבור לחלק הראשון החסר</button>
+  </div>
+</div>
+
+<div id="print-area"></div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+// ════════════════════════════════════════════
+// STORAGE
+// ════════════════════════════════════════════
+// ════════════════════════════════════════════
+// FIREBASE DB LAYER (replaces localStorage)
+// ════════════════════════════════════════════
+var _localCache = {}; // in-memory cache for sync access
+
+var DB = {
+  // ── Local cache helpers (sync, for backwards compat) ──
+  get: function(k) {
+    if (_localCache[k] !== undefined) return _localCache[k];
+    try { var d = localStorage.getItem(k); return d ? JSON.parse(d) : null; } catch(e) { return null; }
+  },
+  set: function(k, v) {
+    _localCache[k] = v;
+    try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {}
+  },
+  del: function(k) {
+    delete _localCache[k];
+    localStorage.removeItem(k);
+  },
+
+  // ── Firestore async methods ──────────────────────────
+  saveReport: function(rep) {
+    // Save locally first (instant)
+    var list = DB.get('gfc_reports') || [];
+    if (!rep.managerKey && rep.data && rep.data.managerKey) rep.managerKey = rep.data.managerKey;
+    if (!rep.date && rep.data && rep.data.date) rep.date = rep.data.date;
+    list.unshift(rep);
+    if (list.length > 80) list = list.slice(0, 80);
+    DB.set('gfc_reports', list);
+    // Then save to Firestore
+    if (window.fbDb && currentUser) {
+      var fns = window.fbFns;
+      var repData = JSON.parse(JSON.stringify(rep));
+      repData.uid = window.fbAuth.currentUser ? window.fbAuth.currentUser.uid : '';
+      repData.createdAt = fns.serverTimestamp();
+      fns.addDoc(fns.collection(window.fbDb, 'reports'), repData)
+         .catch(function(e) { console.warn('Firestore saveReport:', e); });
+    }
+  },
+
+  loadReports: function(managerKey) {
+    var list = DB.get('gfc_reports') || [];
+    // Normalize
+    list = list.map(function(r) {
+      if (!r.managerKey && r.data && r.data.managerKey) r.managerKey = r.data.managerKey;
+      if (!r.date && r.data && r.data.date) r.date = r.data.date;
+      return r;
+    });
+    if (managerKey && managerKey !== 'admin') {
+      var users = DB.get('gfc_users') || {};
+      var altKeys = [managerKey];
+      Object.keys(users).forEach(function(un) {
+        var u = users[un];
+        if (u.managerKey === managerKey || u.label === managerKey) {
+          if (u.managerKey) altKeys.push(u.managerKey);
+          if (u.label) altKeys.push(u.label);
+          altKeys.push(un);
+        }
+      });
+      list = list.filter(function(r) {
+        var rk = r.managerKey || '';
+        for (var i = 0; i < altKeys.length; i++) { if (altKeys[i] && rk === altKeys[i]) return true; }
+        return false;
+      });
+    }
+    return list;
+  },
+
+  saveDraft: function(data) {
+    DB.set('gfc_draft_' + data.managerKey, data);
+    // Firestore
+    if (window.fbDb && window.fbAuth && window.fbAuth.currentUser) {
+      var fns = window.fbFns;
+      fns.setDoc(fns.doc(window.fbDb, 'drafts', window.fbAuth.currentUser.uid),
+        JSON.parse(JSON.stringify(data)))
+        .catch(function(e) { console.warn('Firestore saveDraft:', e); });
+    }
+  },
+
+  loadDraft: function() {
+    return DB.get('gfc_draft') || DB.get('gfc_session_draft');
+  },
+
+  // ── Firestore sync — pull reports from server ────────
+  syncFromFirestore: function(callback) {
+    if (!window.fbDb || !window.fbAuth || !window.fbAuth.currentUser) {
+      if (callback) callback();
+      return;
+    }
+    var fns = window.fbFns;
+    var uid = window.fbAuth.currentUser.uid;
+    var q;
+    if (currentUser && currentUser.role === 'admin') {
+      q = fns.query(fns.collection(window.fbDb, 'reports'),
+        fns.orderBy('date', 'desc'), fns.limit(80));
+    } else {
+      q = fns.query(fns.collection(window.fbDb, 'reports'),
+        fns.where('uid', '==', uid),
+        fns.orderBy('date', 'desc'), fns.limit(80));
+    }
+    fns.getDocs(q).then(function(snap) {
+      var reps = [];
+      snap.forEach(function(d) { reps.push(d.data()); });
+      if (reps.length > 0) {
+        // Merge with local
+        var local = DB.get('gfc_reports') || [];
+        var ids = {};
+        reps.forEach(function(r) { ids[r.id] = true; });
+        var merged = reps.concat(local.filter(function(r) { return !ids[r.id]; }));
+        merged.sort(function(a, b) { return (b.date||'') > (a.date||'') ? 1 : -1; });
+        DB.set('gfc_reports', merged.slice(0, 80));
+      }
+      if (callback) callback();
+    }).catch(function(e) {
+      console.warn('Firestore sync:', e);
+      if (callback) callback();
+    });
+  }
+};
+
+// ════════════════════════════════════════════
+
+
+// ════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════
+function sha256simple(str) {
+  var h = 0;
+  for (var i = 0; i < str.length; i++) { h = Math.imul(31, h) + str.charCodeAt(i) | 0; }
+  return Math.abs(h).toString(16);
+}
+
+// ── Users & Managers (local + Firestore) ─────────────────────────────
+var DEFAULT_USERS = {
+  'admin':  { hash: sha256simple('123456'), role:'admin',  label:'מנהל מערכת', managerKey:null,    email:'admin@g-ops.app',  uid:'DHKG5JWryTWFWMFi80Q4RWNUFjp1' },
+  'einav':  { hash: sha256simple('123456'), role:'manager', label:'עינב',           managerKey:'עינב', email:'einav@g-ops.app',  uid:'KQk8FarWlBgR1JVmUVnnvY475gk2' },
+  'vitaly': { hash: sha256simple('123456'), role:'manager', label:'ויטלי',          managerKey:'ויטלי', email:'vitaly@g-ops.app', uid:'GZstu2jzFHbBzaQ20i2WouWeLCA3'  }
+};
+
+function getUsers() { return DB.get('gfc_users') || DEFAULT_USERS; }
+function saveUsers(u) { DB.set('gfc_users', u); _syncUsersToFirestore(u); }
+
+function _syncUsersToFirestore(users) {
+  if (!window.fbDb) return;
+  var fns = window.fbFns;
+  Object.keys(users).forEach(function(uname) {
+    var u = users[uname];
+    var safe = { role: u.role, label: u.label, managerKey: u.managerKey || null, email: u.email || '' };
+    fns.setDoc(fns.doc(window.fbDb, 'users', uname), safe)
+       .catch(function(e) { console.warn('syncUsers:', e); });
+  });
+}
+
+var DEFAULT_MANAGERS = {
+  'עינב':  { label:'עינב',  teams:['צוות קובי','צוות כחלון','צוות אנטון','צוות ודים','צוות בבר'] },
+  'ויטלי': { label:'ויטלי', teams:['צוות סטפן','צוות יבגני','צוות חי','צוות ארתור','צוות סלבה'] }
+};
+
+function getMgrs()     { return DB.get('gfc_managers') || DEFAULT_MANAGERS; }
+function saveMgrs(m)   {
+  DB.set('gfc_managers', m);
+  if (!window.fbDb) return;
+  var fns = window.fbFns;
+  Object.keys(m).forEach(function(k) {
+    fns.setDoc(fns.doc(window.fbDb, 'managers', k), m[k])
+       .catch(function(e) { console.warn('saveMgrs:', e); });
+  });
+}
+function getMgrTeams(key) { var m = getMgrs(); return (m[key] && m[key].teams) ? m[key].teams : []; }
+function getMgrLabel(key) { var m = getMgrs(); return m[key] ? m[key].label : key; }
+
+
+// ════════════════════════════════════════════
+// DRAWER
+// ════════════════════════════════════════════
+function openDrawer() {
+  buildDrawerNav();
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawer-overlay').classList.add('open');
+}
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.remove('open');
+}
+function buildDrawerNav() {
+  if (!currentUser) return;
+  // User info
+  document.getElementById('drawer-name').textContent = currentUser.label;
+  var roleText = currentUser.role === 'admin' ? 'מנהל מערכת' : 'מנהל עבודה — '+getMgrLabel(currentUser.managerKey||'');
+  document.getElementById('drawer-role').textContent = roleText;
+  // Nav items
+  var nav = document.getElementById('drawer-nav');
+  nav.innerHTML = '';
+  var items = [
+    { id:'form',    icon:'📝', label:'טופס',      adminOnly:false },
+    { id:'history', icon:'📋', label:'היסטוריה',  adminOnly:false },
+    { id:'dash',    icon:'📊', label:'דשבורד',    adminOnly:false },
+    { id:'admin',   icon:'⚙️', label:'ניהול',     adminOnly:true  }
+  ];
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i];
+    if (item.adminOnly && currentUser.role !== 'admin') continue;
+    if (item.id === 'form' && currentUser.role === 'admin') continue;
+    (function(itm) {
+      var btn = document.createElement('button');
+      btn.className = 'drawer-item' + (currentScreen === itm.id ? ' active' : '');
+      btn.innerHTML = '<span class="di">'+itm.icon+'</span>' + itm.label;
+      btn.onclick = function() { closeDrawer(); showScreen(itm.id); };
+      nav.appendChild(btn);
+    })(item);
+  }
+}
+
+function togglePassVis(inputId, btn) {
+  var inp = document.getElementById(inputId);
+  if (!inp && btn) {
+    // called from inline forms — find sibling input
+    inp = btn.parentNode.querySelector('input');
+  }
+  if (!inp) return;
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    btn.innerHTML = '&#128064;'; // open eye
+  } else {
+    inp.type = 'password';
+    btn.innerHTML = '&#128065;'; // closed eye
+  }
+}
+
+function _initFirestoreUser(uid, user) {
+  if (!window.fbDb) return;
+  var fns = window.fbFns;
+  var userData = {
+    username: user.username||'',
+    role: user.role,
+    label: user.label,
+    managerKey: user.managerKey||null,
+    email: user.email||''
+  };
+  fns.setDoc(fns.doc(window.fbDb, 'users', uid), userData, {merge: true})
+     .catch(function(e){ console.warn('initFirestoreUser:', e); });
+  // Also init managers if admin
+  if (user.role === 'admin') {
+    var mgrs = getMgrs();
+    Object.keys(mgrs).forEach(function(k) {
+      fns.setDoc(fns.doc(window.fbDb, 'managers', k), mgrs[k], {merge: true})
+         .catch(function(){});
+    });
+  }
+}
+
+
+function doLogin() {
+  var uname = document.getElementById('li-user').value.trim().toLowerCase();
+  var pass  = document.getElementById('li-pass').value;
+  var errEl = document.getElementById('login-err');
+  errEl.textContent = '';
+  document.getElementById('li-user').style.borderColor = '';
+  document.getElementById('li-pass').style.borderColor = '';
+
+  var users = getUsers();
+  var user  = users[uname];
+
+  if (!user) {
+    errEl.textContent = 'שם משתמש לא קיים במערכת';
+    document.getElementById('li-user').style.borderColor = '#ef4444';
+    return;
+  }
+  if (user.hash !== sha256simple(pass)) {
+    errEl.textContent = 'סיסמא שגויה';
+    document.getElementById('li-pass').style.borderColor = '#ef4444';
+    return;
+  }
+
+  currentUser = { username: uname, role: user.role, label: user.label, managerKey: user.managerKey, uid: user.uid||'' };
+  DB.set('gfc_session', currentUser);
+
+  // Firebase Auth — sign in with email
+  if (window._fbSignIn && user.email) {
+    window._fbSignIn(window.fbAuth, user.email, pass)
+      .then(function(cred) {
+        // Store Firebase UID
+        if (cred && cred.user) {
+          currentUser.uid = cred.user.uid;
+          DB.set('gfc_session', currentUser);
+          // Initialize Firestore user doc if missing
+          _initFirestoreUser(cred.user.uid, user);
+        }
+        DB.syncFromFirestore(function() { startApp(); });
+      })
+      .catch(function(e) {
+        console.warn('Firebase Auth error:', e.code);
+        // Fallback: login locally anyway
+        DB.syncFromFirestore(function() { startApp(); });
+      });
+  } else {
+    DB.syncFromFirestore(function() { startApp(); });
+  }
+}
+
+function doLogout() {
+  currentUser = null;
+  DB.del('gfc_session');
+  if (window.fbAuth && window.fbAuth.signOut) {
+    window.fbAuth.signOut().catch(function(){});
+  }
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app-screen').style.display   = 'none';
+  document.getElementById('li-user').value = '';
+  document.getElementById('li-pass').value = '';
+}
+
+
+function togglePassVis(inputId, btn) {
+  var inp = document.getElementById(inputId);
+  if (!inp && btn) {
+    // called from inline forms — find sibling input
+    inp = btn.parentNode.querySelector('input');
+  }
+  if (!inp) return;
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    btn.innerHTML = '&#128064;'; // open eye
+  } else {
+    inp.type = 'password';
+    btn.innerHTML = '&#128065;'; // closed eye
+  }
+}
+
+function _initFirestoreUser(uid, user) {
+  if (!window.fbDb) return;
+  var fns = window.fbFns;
+  var userData = {
+    username: user.username||'',
+    role: user.role,
+    label: user.label,
+    managerKey: user.managerKey||null,
+    email: user.email||''
+  };
+  fns.setDoc(fns.doc(window.fbDb, 'users', uid), userData, {merge: true})
+     .catch(function(e){ console.warn('initFirestoreUser:', e); });
+  // Also init managers if admin
+  if (user.role === 'admin') {
+    var mgrs = getMgrs();
+    Object.keys(mgrs).forEach(function(k) {
+      fns.setDoc(fns.doc(window.fbDb, 'managers', k), mgrs[k], {merge: true})
+         .catch(function(){});
+    });
+  }
+}
+
+
+function doLogin() {
+  var uname = document.getElementById('li-user').value.trim().toLowerCase();
+  var pass  = document.getElementById('li-pass').value;
+  var errEl = document.getElementById('login-err');
+  var users = getUsers();
+  var user  = users[uname];
+  if (!user || user.hash !== sha256simple(pass)) {
+    errEl.textContent = 'שם משתמש או סיסמה שגויים';
+    return;
+  }
+  errEl.textContent = '';
+  currentUser = { username: uname, role: user.role, label: user.label, managerKey: user.managerKey, uid: user.uid||'' };
+  DB.set('gfc_session', currentUser);
+  startApp();
+}
+
+function doLogout() {
+  currentUser = null;
+  DB.del('gfc_session');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('li-user').value = '';
+  document.getElementById('li-pass').value = '';
+}
+
+// ════════════════════════════════════════════
+// MANAGERS & TEAMS DATA
+// ════════════════════════════════════════════
+var DEFAULT_MANAGERS = {
+  'עינב':  { label:'עינב',  teams:['צוות קובי','צוות כחלון','צוות אנטון','צוות ודים','צוות בבר'] },
+  'ויטלי': { label:'ויטלי', teams:['צוות סטפן','צוות יבגני','צוות חי','צוות ארתור','צוות סלבה'] }
+};
+
+function getMgrs() { return DB.get('gfc_managers') || DEFAULT_MANAGERS; }
+function saveMgrs(m) { DB.set('gfc_managers',m); }
+function getMgrTeams(key) { var m=getMgrs(); return (m[key]&&m[key].teams)?m[key].teams:[]; }
+function getMgrLabel(key) { var m=getMgrs(); return m[key]?m[key].label:key; }
+
+var TOOLS_LIST = ['מנוף','סולמון','מלגזה','פיגום','אחר'];
+
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+function freshState(managerKey) {
+  return {
+    managerKey: managerKey,
+    date: new Date().toLocaleDateString('he-IL'),
+    morning:  {},  // team -> {arrived,uniform,vehicle,tools,notes}
+    eod:      {},  // team -> {status,deviation,devDetail,unresolved,unresDetail,salesUpdated,salesDetail,mergedWith}
+    tomorrow: {},  // team -> {approved,specialTools:[],noTools}
+    workReviewed: null,
+    morningSignedAt: '', morningSignatureImg: '',
+    eodSignedAt: '',    eodSignatureImg: '',
+    dayTab: 'morning'
+  };
+}
+
+var S = null;
+var openMorning={}, openEod={}, openTomorrow={};
+var currentScreen='form';
+var sigMode = 'morning'; // 'morning' | 'eod'
+var sigCanvas, sigCtx, sigDrawing=false, sigHasData=false;
+var currentHistRep = null;
+var firstMissingTab = 'morning';
+var adminAddMode = '';  // 'manager' | 'team'
+var adminAddForKey = '';
+
+function initTeams(key) {
+  var ts=getMgrTeams(key);
+  for(var i=0;i<ts.length;i++){
+    var t=ts[i];
+    if(!S.morning[t])  S.morning[t]  ={arrived:null,uniform:null,vehicle:null,tools:null,notes:''};
+    if(!S.eod[t])      S.eod[t]      ={status:null,deviation:null,devDetail:'',unresolved:null,unresDetail:'',salesUpdated:null,salesDetail:'',mergedWith:''};
+    if(!S.tomorrow[t]) S.tomorrow[t] ={approved:null,specialTools:[],noTools:false};
+  }
+}
+
+function autosave() {
+  if(S&&S.managerKey) DB.set('gfc_draft_'+S.managerKey, S);
+}
+
+// ════════════════════════════════════════════
+// APP START
+// ════════════════════════════════════════════
+function startApp() {
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-screen').style.display='block';
+  // date removed from header
+  // user shown in drawer
+  // drawer handles admin visibility
+  if(currentUser.role==='manager') {
+    var key=currentUser.managerKey;
+    var draft=DB.get('gfc_draft_'+key);
+    if(draft&&draft.managerKey===key&&draft.date===new Date().toLocaleDateString('he-IL')) {
+      S=draft;
+    } else {
+      S=freshState(key);
+    }
+    initTeams(key);
+    showScreen('form');
+  } else {
+    S=null;
+    showScreen('admin');
+  }
+}
+
+// ════════════════════════════════════════════
+// SCREEN NAV
+// ════════════════════════════════════════════
+function showScreen(name) {
+  if (name === 'form' && currentUser && currentUser.role === 'admin') { name = 'admin'; }
+  currentScreen = name;
+  var sc = ['form','history','dash','admin'];
+  for (var i = 0; i < sc.length; i++) {
+    document.getElementById('screen-'+sc[i]).classList[sc[i]===name?'remove':'add']('hidden');
+  }
+  if (name==='form')    renderForm();
+  if (name==='history') renderHistory();
+  if (name==='dash')    renderDashboard();
+  if (name==='admin')   renderAdmin();
+  // Show FAB only on admin screen for admin users
+  var fab = document.getElementById('fab-add-user');
+  if (fab) {
+    if (name==='admin' && currentUser && currentUser.role==='admin') {
+      fab.classList.remove('hidden');
+    } else {
+      fab.classList.add('hidden');
+    }
+  }
+}
+
+function closeModal(id){document.getElementById(id).classList.add('hidden');}
+
+// ════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════
+function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e;}
+function bl(v){if(v===null||v===undefined)return'—';return v?'✅ כן':'❌ לא';}
+
+function mkTog(val,onY,onN,yL,nL,disabled,warnOnYes,onNull){
+  yL=yL||'כן';nL=nL||'לא';
+  var w=el('div','tog');
+  var yCls=warnOnYes?'tb'+(val===true?' w':''):'tb'+(val===true?' y':'');
+  var nCls=warnOnYes?'tb'+(val===false?' y':''):'tb'+(val===false?' n':'');
+  var yb=el('button',yCls,yL);
+  var nb=el('button',nCls,nL);
+  if(disabled){yb.disabled=true;nb.disabled=true;}
+  else{
+    yb.onclick=function(){
+      if(yb.className.indexOf(' y')>=0||yb.className.indexOf(' w')>=0){if(onNull)onNull();yb.className='tb';nb.className='tb';}
+      else onY();
+      autosave();renderForm();
+    };
+    nb.onclick=function(){
+      if(nb.className.indexOf(' y')>=0||nb.className.indexOf(' n')>=0){if(onNull)onNull();yb.className='tb';nb.className='tb';}
+      else onN();
+      autosave();renderForm();
+    };
+  }
+  w.appendChild(yb);w.appendChild(nb);return w;
+}
+function mkInp(val,ph,cb,disabled){var e=el('input');e.className='ti';e.value=val||'';e.placeholder=ph||'';if(disabled)e.disabled=true;else e.oninput=function(){cb(e.value);autosave();};return e;}
+function mkTa(val,ph,cb,disabled){var e=el('textarea');e.className='ta';e.value=val||'';e.placeholder=ph||'';if(disabled)e.disabled=true;else e.oninput=function(){cb(e.value);autosave();};return e;}
+function mkSel(opts,cur,cb){var s=el('select');s.className='sel';for(var i=0;i<opts.length;i++){var o=el('option');o.value=opts[i].v;o.textContent=opts[i].l;if(opts[i].v===cur)o.selected=true;s.appendChild(o);}s.onchange=function(){cb(s.value);autosave();};return s;}
+function mkField(lbl,main,child){var w=el('div','field');var l=el('span',main?'fl-main':'fl',lbl);w.appendChild(l);w.appendChild(child);return w;}
+
+// ════════════════════════════════════════════
+// STATUS
+// ════════════════════════════════════════════
+function morningStatus(t){
+  var m=S.morning[t];if(!m)return'pending';
+  var v=[m.arrived,m.uniform,m.vehicle,m.tools];
+  var allNull=true,anyFalse=false,allFilled=true;
+  for(var i=0;i<v.length;i++){if(v[i]!==null)allNull=false;if(v[i]===null)allFilled=false;if(v[i]===false)anyFalse=true;}
+  if(allNull)return'pending';if(allFilled)return anyFalse?'warn':'ok';return'partial';
+}
+function eodStatus(t){
+  var e=S.eod[t];if(!e||e.status===null)return'pending';
+  if(e.status==='absent')return'absent';if(e.status==='merged')return'merged';
+  if(e.status==='ok')return'ok';
+  if(e.status==='warn'){if(e.deviation===null||e.unresolved===null)return'partial';return(e.deviation||e.unresolved)?'warn':'ok';}
+  return'pending';
+}
+function tomorrowStatus(t){var r=S.tomorrow[t];if(!r||r.approved===null)return'pending';return r.approved?'ok':'warn';}
+function dotCls(s){return{ok:'dot-ok',warn:'dot-warn',partial:'dot-partial',pending:'dot-pending',absent:'dot-absent',merged:'dot-merged'}[s]||'dot-pending';}
+function pillCls(s){return{ok:'pill-ok',warn:'pill-warn',partial:'pill-partial',pending:'pill-pending',absent:'pill-absent',merged:'pill-merged'}[s]||'pill-pending';}
+function pillLbl(s){return{ok:'✓ תקין',warn:'⚠ אירוע',partial:'חלקי',pending:'טרם',absent:'לא עבד',merged:'עם צוות אחר'}[s]||'';}
+
+function isCompleteMorning(){if(!S)return false;var ts=getMgrTeams(S.managerKey);if(!ts.length)return false;for(var i=0;i<ts.length;i++){var st=morningStatus(ts[i]);if(st==='pending'||st==='partial')return false;}return true;}
+function isCompleteEod(){if(!S)return false;var ts=getMgrTeams(S.managerKey);if(!ts.length)return false;for(var i=0;i<ts.length;i++){var st=eodStatus(ts[i]);if(st==='pending'||st==='partial')return false;}for(var j=0;j<ts.length;j++){if(tomorrowStatus(ts[j])==='pending')return false;}return true;}
+
+// ════════════════════════════════════════════
+// RENDER FORM
+// ════════════════════════════════════════════
+function renderForm(){
+  var sc=document.getElementById('screen-form');sc.innerHTML='';
+  if(currentUser&&currentUser.role==='admin'){
+    sc.appendChild(el('div','ibox','כמנהל מערכת, צפה בדוחות בטאב היסטוריה ובניהול.'));
+    return;
+  }
+  if(!S){sc.appendChild(el('div','ibox','אנא היכנס כמנהל עבודה.'));return;}
+
+  // Day tabs
+  var tabs=el('div','day-tabs');
+  var tbM=el('button','day-tab'+(S.dayTab==='morning'?' active':''),'☀️ דיווח בוקר');
+  if(S.morningSignedAt){var sb=el('span','signed-badge','✓');tbM.appendChild(sb);}
+  tbM.onclick=function(){S.dayTab='morning';autosave();renderForm();};
+  var tbE=el('button','day-tab'+(S.dayTab==='eod'?' active':''),'🌙 סוף יום');
+  if(S.eodSignedAt){var sb2=el('span','signed-badge','✓');tbE.appendChild(sb2);}
+  tbE.onclick=function(){S.dayTab='eod';autosave();renderForm();};
+  tabs.appendChild(tbM);tabs.appendChild(tbE);
+  sc.appendChild(tabs);
+
+  if(S.dayTab==='morning') renderMorningTab(sc);
+  else renderEodTab(sc);
+
+  updateProgress();
+}
+
+// ════════════════════════════════════════════
+// MORNING TAB
+// ════════════════════════════════════════════
+function renderMorningTab(sc){
+  var ts=getMgrTeams(S.managerKey);
+  var ro=!!S.morningSignedAt;
+  if(ro){
+    var ban=el('div','signed-info');
+    ban.appendChild(el('span','','🔒'));
+    ban.appendChild(el('span','signed-info-txt','דיווח בוקר נחתם ב-'+S.morningSignedAt));
+    sc.appendChild(ban);
+  }
+  for(var i=0;i<ts.length;i++){
+    (function(team){
+      if(!S.morning[team])S.morning[team]={arrived:null,uniform:null,vehicle:null,tools:null,notes:''};
+      var m=S.morning[team];
+      var isOpen=!!openMorning[team];
+      var st=morningStatus(team);
+      var wrap=el('div','team-card');
+      var hd=el('div','team-hd'+(isOpen?' open':''));
+      var hdL=el('div','team-hd-left');
+      hdL.appendChild(el('span','team-dot '+dotCls(st)));
+      hdL.appendChild(el('span','team-hd-name',team));
+      var hdR=el('div','team-hd-right');
+      hdR.appendChild(el('span','team-pill '+pillCls(st),pillLbl(st)));
+      hdR.appendChild(el('span','team-chev',isOpen?'▲':'▼'));
+      hd.appendChild(hdL);hd.appendChild(hdR);
+      (function(t){hd.onclick=function(){openMorning[t]=!openMorning[t];renderForm();};})(team);
+      wrap.appendChild(hd);
+      if(isOpen){
+        var body=el('div','team-body');
+        body.appendChild(mkField('הגיע בזמן?',true,mkTog(m.arrived,function(){m.arrived=true;},function(){m.arrived=false;},'כן','לא',ro,false,function(){m.arrived=null;})));
+        body.appendChild(mkField('לבוש בגדי גלובוס?',false,mkTog(m.uniform,function(){m.uniform=true;},function(){m.uniform=false;},'כן','לא',ro,false,function(){m.uniform=null;})));
+        body.appendChild(mkField('רכב — נראות ותקינות?',false,mkTog(m.vehicle,function(){m.vehicle=true;},function(){m.vehicle=false;},'כן','לא',ro,false,function(){m.vehicle=null;})));
+        body.appendChild(mkField('כלים וציוד תקינים?',false,mkTog(m.tools,function(){m.tools=true;},function(){m.tools=false;},'כן','לא',ro,false,function(){m.tools=null;})));
+        var nf=el('div','field');nf.appendChild(el('span','fl','הערות'));nf.appendChild(mkTa(m.notes,'הערה...',function(v){m.notes=v;},ro));body.appendChild(nf);
+        wrap.appendChild(body);
+      }
+      sc.appendChild(wrap);
+    })(ts[i]);
+  }
+  // Submit area
+  var area=el('div','submit-area');
+  if(!ro){
+    var allDone=isCompleteMorning();
+    var btn=el('button','submit-btn','✍️ קרא וחתום — דיווח בוקר');
+    btn.onclick=function(){if(allDone)openSigModal('morning');else showMissing('morning');};
+    area.appendChild(btn);
+    var cnt=0;var ts2=getMgrTeams(S.managerKey);for(var i=0;i<ts2.length;i++){if(morningStatus(ts2[i])!=='pending'&&morningStatus(ts2[i])!=='partial')cnt++;}
+    area.appendChild(el('div','hint-txt',cnt+'/'+ts2.length+' צוותים מולאו'));
+  } else {
+    var viewBtn=el('button','submit-btn signed','📄 צפה בדיווח הבוקר החתום');
+    viewBtn.onclick=function(){openSumModal('morning');};
+    area.appendChild(viewBtn);
+  }
+  sc.appendChild(area);
+}
+
+// ════════════════════════════════════════════
+// EOD TAB
+// ════════════════════════════════════════════
+function renderEodTab(sc){
+  var ts=getMgrTeams(S.managerKey);
+  var ro=!!S.eodSignedAt;
+  if(ro){
+    var ban=el('div','signed-info');
+    ban.appendChild(el('span','','🔒'));
+    ban.appendChild(el('span','signed-info-txt','דיווח סוף יום נחתם ב-'+S.eodSignedAt));
+    sc.appendChild(ban);
+  }
+  var hdr=el('div','sec-label','איך היה היום?');sc.appendChild(hdr);
+  for(var i=0;i<ts.length;i++){
+    (function(team){
+      if(!S.eod[team])S.eod[team]={status:null,deviation:null,devDetail:'',unresolved:null,unresDetail:'',salesUpdated:null,salesDetail:'',mergedWith:''};
+      var ev=S.eod[team];
+      var isOpen=!!openEod[team];
+      var st=eodStatus(team);
+      var wrap=el('div','team-card');
+      var hd=el('div','team-hd'+(isOpen?' open':''));
+      var hdL=el('div','team-hd-left');
+      hdL.appendChild(el('span','team-dot '+dotCls(st)));
+      var nc=el('div','');
+      nc.appendChild(el('span','team-hd-name',team));
+      var subMap={ok:'הכל תקין ✓',warn:'דווח אירוע',merged:'עם צוות אחר'+(ev.mergedWith?' — '+ev.mergedWith:''),absent:'לא עבד היום',null:''};
+      nc.appendChild(el('div','team-hd-sub',ev.status?subMap[ev.status]:'טרם דווח'));
+      hdL.appendChild(nc);
+      var hdR=el('div','team-hd-right');
+      hdR.appendChild(el('span','team-pill '+pillCls(st),pillLbl(st)));
+      hdR.appendChild(el('span','team-chev',isOpen?'▲':'▼'));
+      hd.appendChild(hdL);hd.appendChild(hdR);
+      (function(t){hd.onclick=function(){openEod[t]=!openEod[t];renderForm();};})(team);
+      wrap.appendChild(hd);
+      if(isOpen){
+        var body=el('div','eod-body');
+        var grid=el('div','status-grid');
+        var statusDefs=[
+          {label:'הכל תקין',icon:'✅',val:'ok',cls:'sel-ok'},
+          {label:'היה אירוע',icon:'⚠️',val:'warn',cls:'sel-warn'},
+          {label:'עם צוות אחר',icon:'🔀',val:'merged',cls:'sel-merged'},
+          {label:'לא עבד היום',icon:'❌',val:'absent',cls:'sel-absent'}
+        ];
+        for(var si=0;si<statusDefs.length;si++){
+          (function(def){
+            var b=el('button','status-btn'+(ev.status===def.val?' '+def.cls:''),def.icon+' '+def.label);
+            if(!ro){b.onclick=function(){ev.status=(ev.status===def.val?null:def.val);autosave();renderForm();};}
+            grid.appendChild(b);
+          })(statusDefs[si]);
+        }
+        body.appendChild(grid);
+        if(ev.status==='merged'){
+          var mf=el('div','field');mf.style.marginTop='2px';mf.appendChild(el('span','fl','עם איזה צוות?'));
+          var otherTs=getMgrTeams(S.managerKey).filter(function(t){return t!==team;});
+          var opts=[{v:'',l:'בחר צוות...'}];for(var oi=0;oi<otherTs.length;oi++)opts.push({v:otherTs[oi],l:otherTs[oi]});
+          mf.appendChild(mkSel(opts,ev.mergedWith,function(v){ev.mergedWith=v;}));
+          body.appendChild(mf);
+        }
+        if(ev.status==='warn'){
+          var wi=el('div','warn-inner');
+          var df=el('div','field');df.appendChild(el('span','fl-main','חריגה מדף העבודה?'));
+          df.appendChild(mkTog(ev.deviation,function(){ev.deviation=true;autosave();renderForm();},function(){ev.deviation=false;autosave();renderForm();},'יש חריגה','תקין',ro,true,function(){ev.deviation=null;autosave();renderForm();}));
+          if(ev.deviation===true){var ta1=mkTa(ev.devDetail,'פרט...',function(v){ev.devDetail=v;},ro);ta1.style.marginTop='6px';df.appendChild(ta1);}
+          wi.appendChild(df);
+          var uf=el('div','field');uf.appendChild(el('span','fl-main','תקלה שלא נפתרה?'));
+          uf.appendChild(mkTog(ev.unresolved,function(){ev.unresolved=true;autosave();renderForm();},function(){ev.unresolved=false;autosave();renderForm();},'יש תקלה','אין',ro,true,function(){ev.unresolved=null;autosave();renderForm();}));
+          if(ev.unresolved===true){var ta2=mkTa(ev.unresDetail,'תאר...',function(v){ev.unresDetail=v;},ro);ta2.style.marginTop='6px';uf.appendChild(ta2);}
+          wi.appendChild(uf);
+          var sf=el('div','field');sf.appendChild(el('span','fl','סוכן מכירות עודכן?'));
+          sf.appendChild(mkTog(ev.salesUpdated,function(){ev.salesUpdated=true;autosave();renderForm();},function(){ev.salesUpdated=false;autosave();renderForm();},'כן','לא',ro,false,function(){ev.salesUpdated=null;autosave();renderForm();}));
+          if(ev.salesUpdated===true){var ta3=mkTa(ev.salesDetail,'שם סוכן, לקוח...',function(v){ev.salesDetail=v;},ro);ta3.style.marginTop='5px';sf.appendChild(ta3);}
+          wi.appendChild(sf);
+          body.appendChild(wi);
+        }
+        wrap.appendChild(body);
+      }
+      sc.appendChild(wrap);
+    })(ts[i]);
+  }
+  // Tomorrow per team
+  var tmHdr=el('div','sec-label','📋 מוכנות למחר');sc.appendChild(tmHdr);
+  var roEod=!!S.eodSignedAt;
+  for(var j=0;j<ts.length;j++){
+    (function(team){
+      if(!S.tomorrow[team])S.tomorrow[team]={approved:null,specialTools:[],noTools:false};
+      var r=S.tomorrow[team];
+      var isOpen=!!openTomorrow[team];
+      var st=tomorrowStatus(team);
+      var wrap=el('div','team-card');
+      var hd=el('div','team-hd'+(isOpen?' open':''));
+      var hdL=el('div','team-hd-left');
+      hdL.appendChild(el('span','team-dot '+dotCls(st)));
+      hdL.appendChild(el('span','team-hd-name',team));
+      var hdR=el('div','team-hd-right');
+      hdR.appendChild(el('span','team-pill '+pillCls(st),pillLbl(st)));
+      hdR.appendChild(el('span','team-chev',isOpen?'▲':'▼'));
+      hd.appendChild(hdL);hd.appendChild(hdR);
+      (function(t){hd.onclick=function(){openTomorrow[t]=!openTomorrow[t];renderForm();};})(team);
+      wrap.appendChild(hd);
+      if(isOpen){
+        var body=el('div','team-body');
+        body.appendChild(mkField('מנהל העבודה עבר על דף העבודה עם הצוות ואישר?',true,
+          mkTog(r.approved,function(){r.approved=true;autosave();renderForm();},function(){r.approved=false;autosave();renderForm();},'כן','לא',roEod,false,function(){r.approved=null;autosave();renderForm();})));
+        var tf=el('div','field');tf.appendChild(el('span','fl','נדרשים כלים מיוחדים?'));
+        var hint=el('div','');hint.style.cssText='color:#475569;font-size:10px;margin-bottom:5px';hint.textContent='לדוגמה: מנוף, סולמון, מלגזה, פיגום';
+        tf.appendChild(hint);
+        var tg=el('div','tools-grid');
+        var naC=el('span','tool-chip'+(r.noTools?' na':''),'לא רלוונטי');
+        if(!roEod){(function(rr){naC.onclick=function(){rr.noTools=!rr.noTools;if(rr.noTools)rr.specialTools=[];autosave();renderForm();};})(r);}
+        tg.appendChild(naC);
+        for(var ti=0;ti<TOOLS_LIST.length;ti++){
+          (function(tool,rr){
+            var isSel=rr.specialTools&&rr.specialTools.indexOf(tool)>=0;
+            var chip=el('span','tool-chip'+(isSel?' sel':''),tool);
+            if(!roEod){chip.onclick=function(){if(rr.noTools)return;if(!rr.specialTools)rr.specialTools=[];var idx=rr.specialTools.indexOf(tool);if(idx>=0)rr.specialTools.splice(idx,1);else rr.specialTools.push(tool);autosave();renderForm();};}
+            tg.appendChild(chip);
+          })(TOOLS_LIST[ti],r);
+        }
+        tf.appendChild(tg);body.appendChild(tf);wrap.appendChild(body);
+      }
+      sc.appendChild(wrap);
+    })(ts[j]);
+  }
+
+  // EOD Submit
+  var area=el('div','submit-area');
+  if(!roEod){
+    var allDoneE=isCompleteEod();
+    var btn=el('button','submit-btn','✍️ קרא וחתום — סוף יום');
+    btn.onclick=function(){if(allDoneE)openSigModal('eod');else showMissing('eod');};
+    area.appendChild(btn);
+    var cntE=0,tsE=getMgrTeams(S.managerKey);for(var i=0;i<tsE.length;i++){var st=eodStatus(tsE[i]);if(st!=='pending'&&st!=='partial')cntE++;}
+    area.appendChild(el('div','hint-txt',cntE+'/'+tsE.length+' צוותים + מוכנות מחר'));
+  } else {
+    var vBtn=el('button','submit-btn signed','📄 צפה בדיווח סוף היום');
+    vBtn.onclick=function(){openSumModal('eod');};
+    area.appendChild(vBtn);
+    var nBtn=el('button','save-btn','➕ פתח דוח יום חדש');
+    nBtn.onclick=function(){if(confirm('לפתוח דוח חדש?')){startNewReport();}};
+    area.appendChild(nBtn);
+  }
+  sc.appendChild(area);
+}
+
+function startNewReport(){
+  S=freshState(currentUser.managerKey);
+  openMorning={};openEod={};openTomorrow={};
+  DB.del('gfc_draft_'+currentUser.managerKey);
+  renderForm();
+}
+
+// ════════════════════════════════════════════
+// PROGRESS
+// ════════════════════════════════════════════
+function updateProgress(){
+  // badges removed from header — no-op
+}
+
+// ════════════════════════════════════════════
+// MISSING FIELDS
+// ════════════════════════════════════════════
+function showMissing(tab){
+  var ts=getMgrTeams(S.managerKey);var items=[];firstMissingTab=tab;
+  if(tab==='morning'){
+    for(var i=0;i<ts.length;i++){
+      var t=ts[i];var m=S.morning[t]||{};var miss=[];
+      if(m.arrived===null)miss.push('הגעה');if(m.uniform===null)miss.push('לבוש');
+      if(m.vehicle===null)miss.push('רכב');if(m.tools===null)miss.push('כלים');
+      if(miss.length)items.push(t+': '+miss.join(', '));
+    }
+  } else {
+    for(var j=0;j<ts.length;j++){
+      var t2=ts[j];var ev=S.eod[t2]||{};
+      if(ev.status===null){items.push(t2+': סטטוס לא נבחר');continue;}
+      if(ev.status==='warn'){
+        var miss2=[];if(ev.deviation===null)miss2.push('חריגה');if(ev.unresolved===null)miss2.push('תקלה');
+        if(miss2.length)items.push(t2+': '+miss2.join(', '));
+      }
+    }
+    for(var k=0;k<ts.length;k++){if(tomorrowStatus(ts[k])==='pending')items.push(ts[k]+': אישור דף עבודה');}
+
+  }
+  if(!items.length){if(tab==='morning')openSigModal('morning');else openSigModal('eod');return;}
+  var mc=document.getElementById('missing-content');mc.innerHTML='';
+  var sec=el('div','missing-sec');
+  sec.appendChild(el('div','missing-sec-name',tab==='morning'?'☀️ דיווח בוקר':'🌙 דיווח סוף יום'));
+  for(var l=0;l<items.length;l++)sec.appendChild(el('div','missing-item','• '+items[l]));
+  mc.appendChild(sec);
+  document.getElementById('missing-modal').classList.remove('hidden');
+}
+function goToFirstMissing(){closeModal('missing-modal');S.dayTab=firstMissingTab;autosave();renderForm();}
+
+// ════════════════════════════════════════════
+// SIGNATURE
+// ════════════════════════════════════════════
+function openSigModal(mode){
+  sigMode=mode;
+  document.getElementById('sig-modal-title').textContent=(mode==='morning'?'✍️ חתימה — דיווח בוקר':'✍️ חתימה — סוף יום');
+  document.getElementById('sig-modal').classList.remove('hidden');
+  sigCanvas=document.getElementById('sig-canvas');
+  sigCtx=sigCanvas.getContext('2d');
+  sigCanvas.width=sigCanvas.offsetWidth;sigCanvas.height=160;
+  sigCtx.strokeStyle='#60a5fa';sigCtx.lineWidth=2.5;sigCtx.lineCap='round';sigCtx.lineJoin='round';
+  sigHasData=false;document.getElementById('sig-confirm-btn').disabled=true;
+  function gp(e){var r=sigCanvas.getBoundingClientRect();var s=e.touches?e.touches[0]:e;return{x:(s.clientX-r.left)*(sigCanvas.width/r.width),y:(s.clientY-r.top)*(sigCanvas.height/r.height)};}
+  sigCanvas.onmousedown=sigCanvas.ontouchstart=function(e){e.preventDefault();sigDrawing=true;var p=gp(e);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);};
+  sigCanvas.onmousemove=sigCanvas.ontouchmove=function(e){e.preventDefault();if(!sigDrawing)return;var p=gp(e);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();sigHasData=true;document.getElementById('sig-confirm-btn').disabled=false;};
+  sigCanvas.onmouseup=sigCanvas.ontouchend=function(e){e.preventDefault();sigDrawing=false;};
+}
+function clearSig(){sigCtx.clearRect(0,0,sigCanvas.width,sigCanvas.height);sigHasData=false;document.getElementById('sig-confirm-btn').disabled=true;}
+function confirmSig(){
+  if(!sigHasData)return;
+  var img=sigCanvas.toDataURL('image/png');
+  var now=new Date().toLocaleString('he-IL');
+  if(sigMode==='morning'){
+    S.morningSignedAt=now;S.morningSignatureImg=img;
+    // Save morning report
+    var rep={id:'rep_'+Date.now(),type:'morning',date:S.date,managerKey:S.managerKey,signedAt:now,data:JSON.parse(JSON.stringify(S))};
+    DB.saveReport(rep);
+    autosave();closeModal('sig-modal');
+    // Switch to EOD tab
+    setTimeout(function(){S.dayTab='eod';autosave();renderForm();},300);
+  } else {
+    S.eodSignedAt=now;S.eodSignatureImg=img;
+    var rep2={id:'rep_'+Date.now(),type:'eod',date:S.date,managerKey:S.managerKey,signedAt:now,data:JSON.parse(JSON.stringify(S))};
+    DB.saveReport(rep2);
+    autosave();closeModal('sig-modal');
+    setTimeout(function(){openSumModal('eod');},300);
+  }
+  renderForm();
+}
+
+// ════════════════════════════════════════════
+// SUMMARY
+// ════════════════════════════════════════════
+var printData=null;
+function buildSummary(data,container,type){
+  var ts=getMgrTeams(data.managerKey);
+  function row(k,v){var r=el('div','sum-row');r.appendChild(el('span','sum-k',k));r.appendChild(el('span','sum-v',v||'—'));container.appendChild(r);}
+  function secHd(t){var h=el('div','sum-sec-hd');h.appendChild(el('span','sum-sec-ttl',t));container.appendChild(h);}
+  row('מנהל עבודה',getMgrLabel(data.managerKey));row('תאריך',data.date);
+  if(type==='morning'||type==='full'){
+    secHd('☀️ דיווח בוקר');
+    if(data.morningSignedAt)row('נחתם',data.morningSignedAt);
+    for(var i=0;i<ts.length;i++){
+      var t=ts[i];var m=data.morning[t]||{};
+      var bad=[];if(m.uniform===false)bad.push('לבוש');if(m.vehicle===false)bad.push('רכב');if(m.tools===false)bad.push('כלים');
+      row(t,(m.arrived===true?'✅ הגיע':m.arrived===false?'❌ איחר':'—')+(bad.length?' | ⚠ '+bad.join(', '):''));
+    }
+    if(data.morningSignatureImg){var st=el('div','sig-stamp');st.appendChild(el('div','sig-stamp-ttl','✅ דיווח בוקר חתום'));var img=document.createElement('img');img.className='sig-img-el';img.src=data.morningSignatureImg;st.appendChild(img);st.appendChild(el('div','sig-stamp-sub',data.managerKey+' | '+data.morningSignedAt));container.appendChild(st);}
+  }
+  if(type==='eod'||type==='full'){
+    secHd('🌙 דיווח סוף יום');
+    if(data.eodSignedAt)row('נחתם',data.eodSignedAt);
+    for(var j=0;j<ts.length;j++){
+      var t2=ts[j];var ev=data.eod[t2]||{};
+      var stl={ok:'✅ תקין',warn:'⚠️ אירוע',merged:'🔀 עם '+(ev.mergedWith||''),absent:'❌ לא עבד'}[ev.status]||'—';
+      row(t2,stl);
+      if(ev.status==='warn'){if(ev.deviation===true)row('  חריגה',ev.devDetail||'כן');if(ev.unresolved===true)row('  תקלה',ev.unresDetail||'כן');if(ev.salesUpdated!==null)row('  סוכן עודכן',bl(ev.salesUpdated));}
+    }
+
+    // Tomorrow per team
+    secHd('📋 מוכנות מחר');
+    for(var k=0;k<ts.length;k++){var t3=ts[k];var r2=data.tomorrow[t3]||{};row(t3+' — אישור',bl(r2.approved));if(!r2.noTools&&r2.specialTools&&r2.specialTools.length)row(t3+' — כלים',r2.specialTools.join(', '));}
+    // Issues
+    var oi=[];for(var l=0;l<ts.length;l++){if(data.eod[ts[l]]&&data.eod[ts[l]].unresolved===true)oi.push(ts[l]);}
+    if(oi.length){var block=el('div','issues-block');block.appendChild(el('div','issues-ttl','⚠️ תקלות פתוחות ('+oi.length+')'));for(var n=0;n<oi.length;n++)block.appendChild(el('div','issue-item','• ['+oi[n]+'] '+(data.eod[oi[n]].unresDetail||'')));container.appendChild(block);}
+    if(data.eodSignatureImg){var st2=el('div','sig-stamp');st2.appendChild(el('div','sig-stamp-ttl','✅ דיווח סוף יום חתום'));var img2=document.createElement('img');img2.className='sig-img-el';img2.src=data.eodSignatureImg;st2.appendChild(img2);st2.appendChild(el('div','sig-stamp-sub',data.managerKey+' | '+data.eodSignedAt));container.appendChild(st2);}
+  }
+}
+
+function openSumModal(type){
+  var mc=document.getElementById('sum-content');mc.innerHTML='';
+  document.getElementById('sum-modal-title').textContent=type==='morning'?'📄 דיווח בוקר':'📄 דיווח סוף יום';
+  buildSummary(S,mc,type);printData={data:S,type:type};
+  document.getElementById('sum-modal').classList.remove('hidden');
+}
+function printReport(){if(printData)buildPrint(printData.data,printData.type);}
+function printHistReport(){if(currentHistRep)buildPrint(currentHistRep.data,currentHistRep.type||'full');}
+
+// ════════════════════════════════════════════
+// HISTORY
+// ════════════════════════════════════════════
+function exportCSV(reps){
+  var rows=['תאריך,מנהל,סוג,צוות,הגיע,לבוש,רכב,כלים,סטאטוס,חריגה,תקלה,סוכן,אישור,חתימה'];
+  reps.forEach(function(rep){
+    var d=rep.data;if(!d)return;
+    if(!d.managerKey&&rep.managerKey)d.managerKey=rep.managerKey;
+    if(!d.date&&rep.date)d.date=rep.date;
+    var ts=getMgrTeams(d.managerKey);
+    ts.forEach(function(t){
+      var m=d.morning[t]||{};var e=d.eod[t]||{};var tm=(d.tomorrow&&d.tomorrow[t])||{};
+      function yn(v){return v===true?'כן':v===false?'לא':'-';}
+      var sm={ok:'תקין',warn:'אירוע',merged:'עם אחר',absent:'לא עבד'};
+      rows.push(['"'+d.date+'"','"'+getMgrLabel(d.managerKey)+'"','"'+(rep.type==='morning'?'בוקר':'סוף יום')+'"','"'+t+'"',yn(m.arrived),yn(m.uniform),yn(m.vehicle),yn(m.tools),'"'+(sm[e.status]||'-')+'"',yn(e.deviation),yn(e.unresolved),yn(e.salesUpdated),yn(tm.approved),'"'+(rep.signedAt||'')+'"'].join(','));
+    });
+  });
+  var csv='\uFEFF'+rows.join('\n');
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download='g-ops-'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
+function renderHistory(){
+  var sc=document.getElementById('screen-history');
+  sc.innerHTML='';
+  var mKey=currentUser.role==='admin'?null:currentUser.managerKey;
+  var allReps=DB.loadReports(mKey);
+  // DEBUG: show count visibly
+
+  sc.appendChild(el('div','dash-title','דוחות שמורים'));
+  if(!allReps.length){
+    var emp=el('div','hist-empty');
+    emp.innerHTML='<div style="font-size:36px;margin-bottom:9px">&#128205;</div><div>אין דוחות שמורים עדיין</div>';
+    sc.appendChild(emp);return;
+  }
+  // Search
+  var row1=el('div','');row1.style.cssText='display:flex;gap:7px;margin-bottom:7px';
+  var si=el('input');si.className='ti';
+  si.placeholder='חיפוש לפי מנהל או צוות...';
+  si.style.cssText='flex:1;margin-bottom:0';si.value=histState.search||'';
+  var clrBtn=el('button','dash-reset'+(histState.search||histState.dateFrom||histState.dateTo?' active':''),'נקה');
+  clrBtn.onclick=function(){histState.search='';histState.dateFrom='';histState.dateTo='';renderHistory();};
+  row1.appendChild(si);row1.appendChild(clrBtn);sc.appendChild(row1);
+  // Dates
+  var row2=el('div','');row2.style.cssText='display:flex;gap:7px;margin-bottom:10px;align-items:center';
+  var fl=el('span','','מ:');fl.style.cssText='color:#64748b;font-size:11px;flex-shrink:0';
+  var dfi=el('input');dfi.className='ti';dfi.type='date';dfi.style.cssText='flex:1;margin-bottom:0;font-size:11px';
+  if(histState.dateFrom)dfi.value=histState.dateFrom;
+  var tl=el('span','','עד:');tl.style.cssText='color:#64748b;font-size:11px;flex-shrink:0';
+  var dti=el('input');dti.className='ti';dti.type='date';dti.style.cssText='flex:1;margin-bottom:0;font-size:11px';
+  if(histState.dateTo)dti.value=histState.dateTo;
+  row2.appendChild(fl);row2.appendChild(dfi);row2.appendChild(tl);row2.appendChild(dti);
+  sc.appendChild(row2);
+  var _ht=null;
+  si.oninput=function(){histState.search=si.value;if(_ht)clearTimeout(_ht);_ht=setTimeout(function(){renderHistory();},350);};
+  dfi.onchange=function(){histState.dateFrom=dfi.value;renderHistory();};
+  dti.onchange=function(){histState.dateTo=dti.value;renderHistory();};
+  // Filter
+  var reps=allReps.filter(function(rep){
+    var data=rep.data;if(!data)return true;
+    if(!data.managerKey&&rep.managerKey)data.managerKey=rep.managerKey;
+    if(!data.date&&rep.date)data.date=rep.date;
+    var q=(histState.search||'').trim().toLowerCase();
+    if(q){
+      var hay=(getMgrLabel(data.managerKey)||'').toLowerCase();
+      var ts3=getMgrTeams(data.managerKey);
+      for(var ti=0;ti<ts3.length;ti++){hay+=' '+ts3[ti].toLowerCase();}
+      if(hay.indexOf(q)<0)return false;
+    }
+    if(histState.dateFrom||histState.dateTo){
+      var ds=data.date||'';var pts=ds.split('.');var rd=null;
+      if(pts.length===3){rd=new Date(parseInt(pts[2]),parseInt(pts[1])-1,parseInt(pts[0]));}else{rd=new Date(ds);}
+      if(rd&&!isNaN(rd.getTime())){
+        if(histState.dateFrom){var fr=new Date(histState.dateFrom);if(rd<fr)return false;}
+        if(histState.dateTo){var to=new Date(histState.dateTo);to.setHours(23,59,59);if(rd>to)return false;}
+      }
+    }
+    return true;
+  });
+  // Export row
+  var expRow=el('div','');expRow.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px';
+  var cntEl=el('span','',reps.length+' דוחות');cntEl.style.cssText='color:#64748b;font-size:11px';
+  var expBtn=el('button','admin-btn primary','⬇ ייצוא CSV');
+  expBtn.onclick=function(){exportCSV(reps);};
+  expRow.appendChild(cntEl);expRow.appendChild(expBtn);sc.appendChild(expRow);
+  if(!reps.length){
+    var noRes=el('div','hist-empty');
+    noRes.innerHTML='<div style="font-size:28px;margin-bottom:8px">&#128269;</div><div>לא נמצאו תוצאות</div>';
+    sc.appendChild(noRes);return;
+  }
+  // Cards
+  for(var i=0;i<reps.length;i++){(function(rep){
+    var data=rep.data;if(!data)return;
+    if(!data.managerKey&&rep.managerKey)data.managerKey=rep.managerKey;
+    if(!data.date&&rep.date)data.date=rep.date;
+    var ts=getMgrTeams(data.managerKey);var arrivedOk=0,issues=0;
+    for(var j=0;j<ts.length;j++){
+      if(data.morning&&data.morning[ts[j]]&&data.morning[ts[j]].arrived===true)arrivedOk++;
+      if(data.eod&&data.eod[ts[j]]&&data.eod[ts[j]].unresolved===true)issues++;
+    }
+    var card=el('div','hist-card');
+    var top=el('div','hist-card-top');var left=el('div','');
+    left.appendChild(el('div','hist-card-mgr',(rep.type==='morning'?'&#9728; ':'&#127769; ')+getMgrLabel(data.managerKey)));
+    left.appendChild(el('div','hist-card-date',data.date+(rep.type?' | '+(rep.type==='morning'?'בוקר':'סוף יום'):'')));
+    var right=el('div','');
+    right.innerHTML='<span style="color:#4ade80;font-size:11px;font-weight:700">&#10003; חתום</span>';
+    top.appendChild(left);top.appendChild(right);card.appendChild(top);
+    var stats=el('div','hist-stats');
+    stats.appendChild(el('span','stat-chip stat-ok','&#10003; '+arrivedOk+'/'+ts.length+' הגיעו'));
+    if(issues>0)stats.appendChild(el('span','stat-chip stat-warn','⚠ '+issues+' תקלות'));
+    if(rep.signedAt)stats.appendChild(el('span','stat-chip stat-neutral',rep.signedAt));
+    card.appendChild(stats);card.onclick=function(){openHistModal(rep);};sc.appendChild(card);
+  })(reps[i]);}
+}
+
+
+function openHistModal(rep){
+  currentHistRep=rep;
+  var mc=document.getElementById('hist-modal-content');mc.innerHTML='';
+  document.getElementById('hist-modal-ttl').textContent='דוח '+rep.data.date;
+  buildSummary(rep.data,mc,rep.type||'full');
+  document.getElementById('hist-modal').classList.remove('hidden');
+}
+
+// ════════════════════════════════════════════
+// ════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════
+var _chartArrival=null,_chartIssues=null;
+function renderDashboard(){
+  var sc=document.getElementById('screen-dash');
+  sc.innerHTML='';
+
+  // ── FILTERS ─────────────────────────────────────────
+  var filterMgr  = adminState.dashFilter || null;
+  var filterTeam = adminState.dashTeam   || null;
+  var filterDays = (adminState.dashDays !== undefined && adminState.dashDays !== null) ? adminState.dashDays : 30;
+
+  // Build teamsToShow (deduplicated)
+  var teamsToShow=[];
+  var teamsSeen={};
+  if(currentUser.role==='admin'){
+    var mgrsObj=getMgrs();
+    var mgrKeys=filterMgr?[filterMgr]:Object.keys(mgrsObj);
+    mgrKeys.forEach(function(k){
+      getMgrTeams(k).forEach(function(t){
+        if(!teamsSeen[t]){teamsSeen[t]=true;teamsToShow.push(t);}
+      });
+    });
+  } else {
+    getMgrTeams(currentUser.managerKey).forEach(function(t){
+      if(!teamsSeen[t]){teamsSeen[t]=true;teamsToShow.push(t);}
+    });
+  }
+  var activeTeams = filterTeam ? [filterTeam] : teamsToShow;
+
+  // Filter row
+  var filterRow=el('div','dash-filters');
+  if(currentUser.role==='admin'){
+    var mgrSel=document.createElement('select');mgrSel.className='dash-sel';
+    var mgrOptsArr=[{v:'',l:'\u05db\u05dc \u05de\u05e0\u05d4\u05dc\u05d9\u05dd'}];
+    Object.keys(getMgrs()).forEach(function(k){mgrOptsArr.push({v:k,l:getMgrLabel(k)});});
+    mgrOptsArr.forEach(function(o){var opt=document.createElement('option');opt.value=o.v;opt.textContent=o.l;if((o.v||null)===filterMgr)opt.selected=true;mgrSel.appendChild(opt);});
+    mgrSel.onchange=function(){adminState.dashFilter=mgrSel.value||null;adminState.dashTeam=null;renderDashboard();};
+    filterRow.appendChild(mgrSel);
+  }
+  if(teamsToShow.length>1){
+    var teamSel=document.createElement('select');teamSel.className='dash-sel';
+    var tOpt=document.createElement('option');tOpt.value='';tOpt.textContent='\u05db\u05dc \u05d4\u05e6\u05d5\u05d5\u05ea\u05d9\u05dd';if(!filterTeam)tOpt.selected=true;teamSel.appendChild(tOpt);
+    teamsToShow.forEach(function(t){var opt=document.createElement('option');opt.value=t;opt.textContent=t.replace('\u05e6\u05d5\u05d5\u05ea ','');if(t===filterTeam)opt.selected=true;teamSel.appendChild(opt);});
+    teamSel.onchange=function(){adminState.dashTeam=teamSel.value||null;renderDashboard();};
+    filterRow.appendChild(teamSel);
+  }
+  var daysSel=document.createElement('select');daysSel.className='dash-sel';
+  [{v:7,l:'7 \u05d9\u05de\u05d9\u05dd'},{v:30,l:'30 \u05d9\u05de\u05d9\u05dd'},{v:90,l:'90 \u05d9\u05de\u05d9\u05dd'},{v:0,l:'\u05d4\u05db\u05dc'}].forEach(function(o){
+    var opt=document.createElement('option');opt.value=String(o.v);opt.textContent=o.l;if(o.v===filterDays)opt.selected=true;daysSel.appendChild(opt);
+  });
+  daysSel.onchange=function(){adminState.dashDays=parseInt(daysSel.value);renderDashboard();};
+  filterRow.appendChild(daysSel);
+  var hasFilter=(filterMgr!==null||filterTeam!==null||filterDays!==30);
+  var resetBtn=el('button','dash-reset'+(hasFilter?' active':''),'\u05d0\u05e4\u05e1');
+  resetBtn.onclick=function(){adminState.dashFilter=null;adminState.dashTeam=null;adminState.dashDays=30;renderDashboard();};
+  filterRow.appendChild(resetBtn);
+  sc.appendChild(filterRow);
+
+  // ── LOAD & FILTER DATA ──────────────────────────────
+  var mKey=currentUser.role==='admin'?(filterMgr||null):currentUser.managerKey;
+  var allReps=DB.loadReports(mKey);
+
+  // Filter by days — use r.date OR r.data.date
+  if(filterDays>0){
+    var cutoff=new Date();cutoff.setDate(cutoff.getDate()-filterDays);cutoff.setHours(0,0,0,0);
+    allReps=allReps.filter(function(r){
+      var dateStr=(r.data&&r.data.date)?r.data.date:(r.date||'');
+      if(!dateStr)return true;
+      var parts=dateStr.split('.');
+      if(parts.length===3){
+        var d=new Date(parseInt(parts[2]),parseInt(parts[1])-1,parseInt(parts[0]));
+        if(!isNaN(d.getTime()))return d>=cutoff;
+      }
+      var d2=new Date(dateStr);
+      return !isNaN(d2.getTime())?d2>=cutoff:true;
+    });
+  }
+
+  if(!allReps.length||!activeTeams.length){
+    var emp=el('div','');emp.style.cssText='text-align:center;padding:40px 20px;color:var(--text3);font-size:12px;line-height:1.8';
+    emp.innerHTML='<div style="font-size:36px;margin-bottom:12px">&#128202;</div><div style="color:var(--blue3);font-weight:700;font-size:14px;margin-bottom:8px">\u05d0\u05d9\u05df \u05e0\u05ea\u05d5\u05e0\u05d9\u05dd \u05dc\u05ea\u05e7\u05d5\u05e4\u05d4 \u05d4\u05e0\u05d1\u05d7\u05e8\u05ea</div>';
+    sc.appendChild(emp);return;
+  }
+
+  // ── AGGREGATE ───────────────────────────────────────
+  // Use only morning reports for arrival, eod reports for issues/deviations
+  // Avoid double-counting: one report per date per team
+  var teamStats={};
+  activeTeams.forEach(function(t){teamStats[t]={ok:0,late:0,noData:0,issues:0,dev:0,absent:0,total:0};});
+
+  // Track unique date+team combos to avoid double counting
+  var seen={};   // key: date+"_"+team -> {morning,eod}
+  allReps.forEach(function(r){
+    var d=r.data;if(!d)return;
+    if(!d.managerKey&&r.managerKey)d.managerKey=r.managerKey;
+    if(!d.date&&r.date)d.date=r.date;
+    if(!d.morning)d.morning={};
+    if(!d.eod)d.eod={};
+    var dt=d.date||'';
+
+    activeTeams.forEach(function(t){
+      var key=dt+'_'+t;
+      if(!seen[key])seen[key]={morning:null,eod:null};
+
+      if(r.type==='morning'&&d.morning[t]){
+        if(!seen[key].morning)seen[key].morning=d.morning[t];
+      }
+      if(r.type==='eod'&&d.eod[t]){
+        if(!seen[key].eod==='')seen[key].eod=d.eod[t];
+        seen[key].eod=d.eod[t];
+      }
+      // If type not set (old format), take both
+      if(!r.type){
+        if(d.morning[t]&&!seen[key].morning)seen[key].morning=d.morning[t];
+        if(d.eod[t])seen[key].eod=d.eod[t];
+      }
+    });
+  });
+
+  var dateSet={};
+  Object.keys(seen).forEach(function(key){
+    var parts=key.split('_');
+    var dt=parts[0];
+    var t=parts.slice(1).join('_');
+    if(!teamStats[t])return;
+    dateSet[dt]=true;
+    var m=seen[key].morning;
+    var e=seen[key].eod;
+    if(!m&&!e)return;
+    teamStats[t].total++;
+    if(m){
+      if(m.arrived===true)teamStats[t].ok++;
+      else if(m.arrived===false)teamStats[t].late++;
+    }
+    if(e){
+      if(e.status==='absent')teamStats[t].absent++;
+      if(e.unresolved===true)teamStats[t].issues++;
+      if(e.deviation===true)teamStats[t].dev++;
+    }
+  });
+
+  var totalDays=0,arrivedOk=0,totalIssues=0,totalDev=0;
+  activeTeams.forEach(function(t){
+    var st=teamStats[t];
+    totalDays+=st.total;arrivedOk+=st.ok;totalIssues+=st.issues;totalDev+=st.dev;
+  });
+  var pct=totalDays>0?Math.round(arrivedOk/totalDays*100):0;
+
+  // ── KPI CARDS ────────────────────────────────────────
+  var kg=el('div','kpi-grid');
+  function kpi(v,l,cls){var k=el('div','kpi-card');k.appendChild(el('div','kpi-val '+cls,String(v)));k.appendChild(el('div','kpi-lbl',l));return k;}
+  kg.appendChild(kpi(Object.keys(dateSet).length,'\u05d9\u05de\u05d9 \u05d3\u05d9\u05d5\u05d5\u05d7','kpi-blue'));
+  kg.appendChild(kpi(pct+'%','\u05d4\u05d2\u05e2\u05d4 \u05d1\u05d6\u05de\u05df','kpi-green'));
+  kg.appendChild(kpi(totalIssues,'\u05ea\u05e7\u05dc\u05d5\u05ea','kpi-red'));
+  kg.appendChild(kpi(totalDev,'\u05d7\u05e8\u05d9\u05d2\u05d5\u05ea','kpi-yellow'));
+  sc.appendChild(kg);
+
+  var gridC='rgba(255,255,255,.07)';
+  var tickC='#94a3b8';
+
+  if(typeof Chart==='undefined'){
+    sc.appendChild(el('div','ibox','Chart.js \u05dc\u05d0 \u05e0\u05d8\u05e2\u05df. \u05d1\u05d3\u05d5\u05e7 \u05d7\u05d9\u05d1\u05d5\u05e8 \u05d0\u05d9\u05e0\u05d8\u05e8\u05e0\u05d8.'));
+    return;
+  }
+
+  // ── CHART 1: Arrival per team ─────────────────────
+  var ac=el('div','chart-card');
+  ac.appendChild(el('div','chart-title','\u05d4\u05d2\u05e2\u05d4 \u05d1\u05d6\u05de\u05df \u05dc\u05e4\u05d9 \u05e6\u05d5\u05d5\u05ea'));
+  var h1=Math.max(160,activeTeams.length*44);
+  var w1=el('div','');w1.style.cssText='position:relative;height:'+h1+'px;width:100%;overflow:hidden';
+  var cvs1=document.createElement('canvas');
+  w1.appendChild(cvs1);ac.appendChild(w1);sc.appendChild(ac);
+
+  var lbls=activeTeams.map(function(t){return t.replace('\u05e6\u05d5\u05d5\u05ea ','');});
+  var okData=activeTeams.map(function(t){return teamStats[t].total>0?Math.round(teamStats[t].ok/teamStats[t].total*100):0;});
+  var lateData=activeTeams.map(function(t){return teamStats[t].total>0?Math.round(teamStats[t].late/teamStats[t].total*100):0;});
+
+  if(_chartArrival){try{_chartArrival.destroy();}catch(e){}}
+  _chartArrival=new Chart(cvs1,{
+    type:'bar',
+    data:{labels:lbls,datasets:[
+      {label:'\u05d4\u05d2\u05d9\u05e2 \u05d1\u05d6\u05de\u05df',data:okData,backgroundColor:'rgba(34,197,94,.85)',borderRadius:4,borderSkipped:false},
+      {label:'\u05d0\u05d9\u05d7\u05e8',data:lateData,backgroundColor:'rgba(239,68,68,.75)',borderRadius:4,borderSkipped:false}
+    ]},
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:true,position:'top',labels:{color:tickC,font:{size:10},boxWidth:12}},
+        tooltip:{rtl:true,callbacks:{label:function(ctx){var st=teamStats[activeTeams[ctx.dataIndex]];return ' '+ctx.dataset.label+': '+ctx.parsed.x+'%';}}}
+      },
+      scales:{
+        x:{min:0,max:100,grid:{color:gridC},ticks:{color:tickC,callback:function(v){return v+'%';},font:{size:10}},border:{display:false}},
+        y:{grid:{display:false},ticks:{color:tickC,font:{size:11},autoSkip:false,padding:4},border:{display:false}}
+      },
+      layout:{padding:{right:8}}
+    }
+  });
+
+  // ── CHART 2: Heat-map (last 14 days) ──────────────
+  // Collect all dates from seen keys
+  var allDates=Object.keys(dateSet).sort();
+  var heatDates=allDates.slice(-14);
+
+  if(heatDates.length>0){
+    var hc=el('div','chart-card');hc.style.marginTop='10px';
+    hc.appendChild(el('div','chart-title','\u05e0\u05d5\u05db\u05d7\u05d5\u05ea 14 \u05d4\u05d9\u05de\u05d9\u05dd \u05d4\u05d0\u05d7\u05e8\u05d5\u05e0\u05d9\u05dd'));
+
+    // Build lookup: date -> team -> status
+    var heatMap={};
+    Object.keys(seen).forEach(function(key){
+      var parts=key.split('_');
+      var dt=parts[0];var t=parts.slice(1).join('_');
+      if(!heatMap[dt])heatMap[dt]={};
+      var m=seen[key].morning;
+      if(m){heatMap[dt][t]=(m.arrived===true?'ok':m.arrived===false?'late':'nr');}
+      else{heatMap[dt][t]='nr';}
+    });
+
+    var tbl=document.createElement('table');
+    tbl.style.cssText='width:100%;border-collapse:collapse;font-size:10px';
+    // Header
+    var thead=document.createElement('thead');
+    var hrow=document.createElement('tr');
+    var th0=document.createElement('th');th0.style.cssText='text-align:right;padding:3px 6px;color:'+tickC+';width:60px;font-weight:600';th0.textContent='\u05e6\u05d5\u05d5\u05ea';
+    hrow.appendChild(th0);
+    heatDates.forEach(function(dt){
+      var th=document.createElement('th');
+      th.style.cssText='text-align:center;padding:2px 1px;color:'+tickC+';font-weight:400;min-width:22px';
+      var p=dt.split('.');th.textContent=p.length===3?(p[0]+'/'+p[1]):dt.slice(-5);
+      hrow.appendChild(th);
+    });
+    thead.appendChild(hrow);tbl.appendChild(thead);
+
+    // Body
+    var tbody=document.createElement('tbody');
+    activeTeams.forEach(function(t){
+      var tr2=document.createElement('tr');
+      var td0=document.createElement('td');
+      td0.style.cssText='padding:3px 6px;color:'+tickC+';font-weight:600;white-space:nowrap;overflow:hidden;max-width:60px;text-overflow:ellipsis';
+      td0.textContent=t.replace('\u05e6\u05d5\u05d5\u05ea ','');
+      tr2.appendChild(td0);
+      heatDates.forEach(function(dt){
+        var td=document.createElement('td');td.style.cssText='text-align:center;padding:2px 1px';
+        var st=(heatMap[dt]&&heatMap[dt][t])?heatMap[dt][t]:'nd';
+        var dot=document.createElement('div');
+        var dotColors={ok:'#22c55e',late:'#ef4444',nr:'#f59e0b',nd:'#1e293b'};
+        var dotTitles={ok:'\u05d4\u05d2\u05d9\u05e2 \u05d1\u05d6\u05de\u05df',late:'\u05d0\u05d9\u05d7\u05e8',nr:'\u05dc\u05d0 \u05d3\u05d5\u05d5\u05d7',nd:'\u05d0\u05d9\u05df \u05e0\u05ea\u05d5\u05df'};
+        dot.style.cssText='width:18px;height:18px;border-radius:4px;margin:0 auto;background:'+dotColors[st];
+        dot.title=dotTitles[st];
+        td.appendChild(dot);tr2.appendChild(td);
+      });
+      tbody.appendChild(tr2);
+    });
+    tbl.appendChild(tbody);
+
+    // Legend
+    var legend=el('div','');legend.style.cssText='display:flex;gap:10px;margin-top:8px;flex-wrap:wrap';
+    [{c:'#22c55e',l:'\u05d4\u05d2\u05d9\u05e2'},{c:'#ef4444',l:'\u05d0\u05d9\u05d7\u05e8'},{c:'#f59e0b',l:'\u05dc\u05d0 \u05d3\u05d5\u05d5\u05d7'},{c:'#1e293b',l:'\u05d0\u05d9\u05df \u05e0\u05ea\u05d5\u05df'}].forEach(function(item){
+      var wrap=el('div','');wrap.style.cssText='display:flex;align-items:center;gap:4px';
+      var dot=el('div','');dot.style.cssText='width:12px;height:12px;border-radius:3px;background:'+item.c+';flex-shrink:0';
+      wrap.appendChild(dot);wrap.appendChild(el('span','',item.l));wrap.lastChild.style.cssText='color:'+tickC+';font-size:10px';
+      legend.appendChild(wrap);
+    });
+
+    var tblWrap=el('div','');tblWrap.style.cssText='overflow-x:auto;margin-top:6px';
+    tblWrap.appendChild(tbl);hc.appendChild(tblWrap);hc.appendChild(legend);sc.appendChild(hc);
+  }
+
+  // ── CHART 3: Issues + Deviations over time ─────────
+  var datesSorted=allDates;
+  if(datesSorted.length>1){
+    var lc=el('div','chart-card');lc.style.marginTop='10px';
+    lc.appendChild(el('div','chart-title','\u05ea\u05e7\u05dc\u05d5\u05ea \u05d5\u05d7\u05e8\u05d9\u05d2\u05d5\u05ea \u05dc\u05d0\u05d5\u05e8\u05da \u05d6\u05de\u05df'));
+    var w2=el('div','');w2.style.cssText='position:relative;height:140px;width:100%;overflow:hidden';
+    var cvs2=document.createElement('canvas');w2.appendChild(cvs2);lc.appendChild(w2);sc.appendChild(lc);
+
+    var issuesByDate={},devByDate={};
+    datesSorted.forEach(function(dt){issuesByDate[dt]=0;devByDate[dt]=0;});
+    Object.keys(seen).forEach(function(key){
+      var parts=key.split('_');var dt=parts[0];var t=parts.slice(1).join('_');
+      if(!teamStats[t])return;
+      var e=seen[key].eod;
+      if(e){if(e.unresolved===true)issuesByDate[dt]++;if(e.deviation===true)devByDate[dt]++;}
+    });
+
+    if(_chartIssues){try{_chartIssues.destroy();}catch(e){}}
+    _chartIssues=new Chart(cvs2,{
+      type:'line',
+      data:{labels:datesSorted,datasets:[
+        {label:'\u05ea\u05e7\u05dc\u05d5\u05ea',data:datesSorted.map(function(k){return issuesByDate[k];}),borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.12)',tension:.4,fill:true,pointRadius:3,pointHoverRadius:5,pointBackgroundColor:'#ef4444'},
+        {label:'\u05d7\u05e8\u05d9\u05d2\u05d5\u05ea',data:datesSorted.map(function(k){return devByDate[k];}),borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,.08)',tension:.4,fill:true,pointRadius:3,pointHoverRadius:5,pointBackgroundColor:'#f59e0b'}
+      ]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:true,position:'top',labels:{color:tickC,font:{size:10},boxWidth:12}},tooltip:{rtl:true}},
+        scales:{
+          x:{grid:{color:gridC},ticks:{color:tickC,maxRotation:0,font:{size:9}},border:{display:false}},
+          y:{min:0,grid:{color:gridC},ticks:{color:tickC,stepSize:1,font:{size:10}},border:{display:false}}
+        }
+      }
+    });
+  }
+
+  // ── TABLE: Per-team detail ─────────────────────────
+  var dt2=el('div','chart-card');dt2.style.marginTop='10px';
+  dt2.appendChild(el('div','chart-title','\u05e4\u05d9\u05e8\u05d5\u05d8 \u05dc\u05e4\u05d9 \u05e6\u05d5\u05d5\u05ea'));
+  var dtbl=document.createElement('table');
+  dtbl.style.cssText='width:100%;border-collapse:collapse;font-size:11px';
+
+  var thead2=document.createElement('thead');
+  var dhr=document.createElement('tr');
+  ['\u05e6\u05d5\u05d5\u05ea','\u05d3\u05d9\u05d5\u05d5\u05d7\u05d9\u05dd','\u05d4\u05d2\u05e2\u05d4 %','\u05d0\u05d9\u05d7\u05e8\u05d9\u05dd','\u05ea\u05e7\u05dc\u05d5\u05ea','\u05d7\u05e8\u05d9\u05d2\u05d5\u05ea'].forEach(function(h){
+    var th=document.createElement('th');
+    th.style.cssText='padding:6px 6px;text-align:right;color:'+tickC+';font-weight:700;border-bottom:1px solid #1e293b;background:#0f172a;font-size:10px';
+    th.textContent=h;dhr.appendChild(th);
+  });
+  thead2.appendChild(dhr);dtbl.appendChild(thead2);
+
+  var dtbody=document.createElement('tbody');
+  activeTeams.forEach(function(t){
+    var st=teamStats[t];
+    var arrPct=st.total>0?Math.round(st.ok/st.total*100):0;
+    var row=document.createElement('tr');row.style.borderBottom='1px solid #1e293b';
+    var cells=[
+      {txt:t.replace('\u05e6\u05d5\u05d5\u05ea ',''),color:tickC},
+      {txt:String(st.total),color:tickC},
+      {txt:arrPct+'%',color:arrPct>=80?'#4ade80':arrPct>=50?'#fbbf24':'#f87171'},
+      {txt:String(st.late),color:st.late>0?'#f87171':tickC},
+      {txt:String(st.issues),color:st.issues>0?'#f87171':tickC},
+      {txt:String(st.dev),color:st.dev>0?'#fbbf24':tickC}
+    ];
+    cells.forEach(function(cell){
+      var td=document.createElement('td');
+      td.style.cssText='padding:6px 6px;color:'+cell.color+';font-size:11px';
+      td.textContent=cell.txt;row.appendChild(td);
+    });
+    dtbody.appendChild(row);
+  });
+  dtbl.appendChild(dtbody);dt2.appendChild(dtbl);sc.appendChild(dt2);
+}
+
+
+// ════════════════════════════════════════════
+// ADMIN SCREEN
+// ════════════════════════════════════════════
+function fabAddUser() {
+  adminState.addUser = true;
+  adminState.addUserRole = 'manager';
+  adminState.addTeamFor = null;
+  adminState.addManager = false;
+  showScreen('admin');
+  // Scroll to users section after render
+  setTimeout(function() {
+    var el2 = document.getElementById('admin-users-section');
+    if (el2) el2.scrollIntoView({behavior:'smooth', block:'start'});
+  }, 100);
+}
+
+var adminState = { addTeamFor: null, addManager: false, addUser: false, addUserRole: 'manager', editUser: null, editManager: null, dashFilter: null };
+
+function renderAdmin() {
+  if (currentUser.role !== 'admin') return;
+  var sc = document.getElementById('screen-admin');
+  sc.innerHTML = '';
+  sc.appendChild(el('div','dash-title','ניהול מערכת'));
+  // Data backup/restore
+  var dataRow=el('div','');dataRow.style.cssText='display:flex;gap:7px;margin-bottom:16px';
+  var expDataBtn=el('button','admin-btn primary','⬇ גיבוי נתונים');
+  expDataBtn.onclick=function(){
+    var data={reports:DB.get('gfc_reports'),users:DB.get('gfc_users'),managers:DB.get('gfc_managers')};
+    var blob=new Blob([JSON.stringify(data)],{type:'application/json'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');a.href=url;a.download='g-ops-backup-'+new Date().toISOString().slice(0,10)+'.json';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  };
+  var impDataBtn=el('button','admin-btn','↑ טעינת נתונים');
+  impDataBtn.onclick=function(){
+    var inp=document.createElement('input');inp.type='file';inp.accept='.json';
+    inp.onchange=function(e){
+      var file=e.target.files[0];if(!file)return;
+      var reader=new FileReader();
+      reader.onload=function(ev){
+        try{
+          var data=JSON.parse(ev.target.result);
+          if(data.reports){DB.set('gfc_reports',data.reports);}
+          if(data.users){DB.set('gfc_users',data.users);}
+          if(data.managers){DB.set('gfc_managers',data.managers);}
+          alert('הנתונים טוענו בהצלחה! דוחות: '+(data.reports||[]).length);
+          renderAdmin();
+        }catch(err){alert('שגיאה בטעינת הקובץ: '+err.message);}
+      };
+      reader.readAsText(file);
+    };
+    inp.click();
+  };
+  dataRow.appendChild(expDataBtn);dataRow.appendChild(impDataBtn);
+  sc.appendChild(dataRow);
+
+  var mgrs = getMgrs();
+
+  // ── MANAGERS & TEAMS ─────────────────────
+  var mgrSection = el('div','admin-section');
+  mgrSection.appendChild(el('div','admin-sec-title','מנהלי עבודה וצוותים'));
+
+  Object.keys(mgrs).forEach(function(key) {
+    var mgr = mgrs[key];
+    var card = el('div','admin-card');
+
+    if (adminState.editManager === key) {
+      // EDIT NAME MODE
+      var eForm = el('div','add-form');
+      eForm.appendChild(el('div','add-form-title','עריכת שם: '+mgr.label));
+      var eInp = el('input'); eInp.className='ti'; eInp.value=mgr.label; eInp.style.marginBottom='7px';
+      var eBtnR = el('div',''); eBtnR.style.cssText='display:flex;gap:7px';
+      var eSave = el('button','add-btn','שמור');
+      var eCancel = el('button','cancel-btn','ביטול');
+      eCancel.onclick = function() { adminState.editManager=null; renderAdmin(); };
+      eSave.onclick = function() {
+        var newName = eInp.value.trim(); if(!newName) return;
+        var m=getMgrs(); m[key].label=newName; saveMgrs(m);
+        adminState.editManager=null; renderAdmin();
+      };
+      eInp.onkeydown = function(e) { if(e.key==='Enter') eSave.onclick(); };
+      eBtnR.appendChild(eSave); eBtnR.appendChild(eCancel);
+      eForm.appendChild(eInp); eForm.appendChild(eBtnR);
+      card.appendChild(eForm);
+    } else {
+      // HEADER ROW — view mode
+      var top = el('div','admin-card-top');
+      top.appendChild(el('div','admin-card-name', mgr.label));
+      var acts = el('div','admin-card-actions');
+      // Edit name
+      var editBtn = el('button','admin-btn primary','עריכה');
+      (function(k) {
+        editBtn.onclick = function() { adminState.editManager=k; adminState.addTeamFor=null; adminState.addManager=false; renderAdmin(); };
+      })(key);
+      acts.appendChild(editBtn);
+      // Add team
+      var addTBtn = el('button','admin-btn primary','+ צוות');
+      (function(k) {
+        addTBtn.onclick = function() {
+          adminState.addTeamFor = (adminState.addTeamFor === k ? null : k);
+          adminState.addManager = false;
+          adminState.editManager = null;
+          renderAdmin();
+        };
+      })(key);
+      acts.appendChild(addTBtn);
+      // Delete manager
+      var delMgrBtn = el('button','admin-btn danger','מחק');
+      (function(k, label) {
+        delMgrBtn.onclick = function() {
+          if (!confirm('למחוק את מנהל העבודה '+label+'? כל הצוותים שלו יימחקו.')) return;
+          var m=getMgrs(); delete m[k]; saveMgrs(m);
+          // also remove associated users
+          var u=getUsers();
+          Object.keys(u).forEach(function(un){ if(u[un].managerKey===k) delete u[un]; });
+          saveUsers(u);
+          adminState.addTeamFor=null; adminState.editManager=null;
+          renderAdmin();
+        };
+      })(key, mgr.label);
+      acts.appendChild(delMgrBtn);
+      top.appendChild(acts);
+      card.appendChild(top);
+    }
+
+    // Teams chips
+    var tWrap = el('div',''); tWrap.style.cssText = 'margin-top:7px;display:flex;flex-wrap:wrap;gap:4px';
+    for (var ti = 0; ti < mgr.teams.length; ti++) {
+      (function(team, k, idx) {
+        var tag = el('span','team-tag', team);
+        var xBtn = el('button','','✕');
+        xBtn.style.cssText = 'background:none;border:none;color:#ef4444;cursor:pointer;font-size:10px;margin-right:3px;padding:0';
+        xBtn.onclick = function(e) {
+          e.stopPropagation();
+          if (confirm('מחק צוות: '+team+'?')) {
+            var m = getMgrs(); m[k].teams.splice(idx,1); saveMgrs(m); renderAdmin();
+          }
+        };
+        tag.insertBefore(xBtn, tag.firstChild);
+        tWrap.appendChild(tag);
+      })(mgr.teams[ti], key, ti);
+    }
+    card.appendChild(tWrap);
+
+    // Inline add-team form
+    if (adminState.addTeamFor === key) {
+      var form = el('div','add-form'); form.style.marginTop = '8px';
+      form.appendChild(el('div','add-form-title','הוסף צוות ל-'+mgr.label));
+      var inp = el('input'); inp.className = 'ti'; inp.placeholder = 'שם הצוות (לדוגמה: צוות דוד)';
+      inp.style.marginBottom = '7px';
+      var btnRow = el('div',''); btnRow.style.cssText = 'display:flex;gap:7px';
+      var saveBtn = el('button','add-btn','הוסף');
+      var cancelBtn = el('button','cancel-btn','ביטול');
+      cancelBtn.onclick = function() { adminState.addTeamFor = null; renderAdmin(); };
+      saveBtn.onclick = function() {
+        var name = inp.value.trim();
+        if (!name) { inp.style.borderColor='#ef4444'; return; }
+        var m = getMgrs();
+        if (m[key].teams.indexOf(name) >= 0) { alert('צוות זה כבר קיים'); return; }
+        m[key].teams.push(name); saveMgrs(m);
+        adminState.addTeamFor = null; renderAdmin();
+      };
+      inp.onkeydown = function(e) { if (e.key==='Enter') saveBtn.onclick(); };
+      btnRow.appendChild(saveBtn); btnRow.appendChild(cancelBtn);
+      form.appendChild(inp); form.appendChild(btnRow);
+      card.appendChild(form);
+      setTimeout(function() { inp.focus(); }, 50);
+    }
+
+    mgrSection.appendChild(card);
+  });
+
+  if (adminState.addManager) {
+    var mForm = el('div','add-form'); mForm.style.marginTop = '8px';
+    mForm.appendChild(el('div','add-form-title','הוסף מנהל עבודה חדש'));
+    var mName  = el('input'); mName.className='ti';  mName.placeholder='שם מנהל העבודה';  mName.style.marginBottom='6px';
+    var mUser  = el('input'); mUser.className='ti';  mUser.placeholder='שם משתמש לכניסה'; mUser.style.marginBottom='6px';
+    var mPass  = el('input'); mPass.className='ti';  mPass.placeholder='סיסמה';           mPass.style.marginBottom='6px'; mPass.type='password'; mPass.style.paddingLeft='36px';
+    var mBtnR  = el('div',''); mBtnR.style.cssText='display:flex;gap:7px';
+    var mSave  = el('button','add-btn','הוסף');
+    var mCancl = el('button','cancel-btn','ביטול');
+    mCancl.onclick = function() { adminState.addManager=false; renderAdmin(); };
+    // wrap mPass in pass-wrap div with eye button
+    var mPassWrap = el('div','pass-wrap'); mPassWrap.style.marginBottom='6px';
+    mPassWrap.appendChild(mPass);
+    var mEye = el('button','eye-btn'); mEye.type='button'; mEye.innerHTML='&#128065;';
+    mEye.onclick = function() { togglePassVis(null, mEye); };
+    mPassWrap.appendChild(mEye);
+    mSave.onclick = function() {
+      var name=mName.value.trim(), uname=mUser.value.trim().toLowerCase(), pass=mPass.value.trim();
+      if (!name||!uname||!pass) { alert('יש למלא את כל השדות'); return; }
+      var users=getUsers();
+      if (users[uname]) { alert('שם משתמש כבר קיים'); return; }
+      var m=getMgrs(); m[name]={label:name+' — מנהל עבודה',teams:[]}; saveMgrs(m);
+      users[uname]={hash:sha256simple(pass),role:'manager',label:name,managerKey:name}; saveUsers(users);
+      adminState.addManager=false; renderAdmin();
+    };
+    mBtnR.appendChild(mSave); mBtnR.appendChild(mCancl);
+    mForm.appendChild(mName); mForm.appendChild(mUser); mForm.appendChild(mPassWrap);
+    mForm.appendChild(mBtnR);
+    mgrSection.appendChild(mForm);
+  }
+  sc.appendChild(mgrSection);
+
+  // ── USERS ────────────────────────────────
+  var usersSection = el('div','admin-section');
+  usersSection.id = 'admin-users-section';
+  usersSection.appendChild(el('div','admin-sec-title','ניהול משתמשים'));
+  var users = getUsers();
+  Object.keys(users).forEach(function(uname) {
+    var u = users[uname];
+    var card = el('div','admin-card');
+
+    if (adminState.editUser === uname) {
+      // EDIT MODE
+      var eForm = el('div','');
+      eForm.appendChild(el('div','add-form-title','עריכת משתמש: '+uname));
+      var eLbl  = el('input'); eLbl.className='ti'; eLbl.value=u.label; eLbl.placeholder='שם תצוגה'; eLbl.style.marginBottom='6px';
+      var ePass = el('input'); ePass.className='ti'; ePass.placeholder='סיסמה חדשה (השאר ריק לשמור)'; ePass.type='password'; ePass.style.paddingLeft='36px';
+      var ePassWrap=el('div','pass-wrap'); ePassWrap.style.marginBottom='6px'; ePassWrap.appendChild(ePass);
+      var eEye=el('button','eye-btn'); eEye.type='button'; eEye.innerHTML='&#128065;'; eEye.onclick=function(){togglePassVis(null,eEye);}; ePassWrap.appendChild(eEye);
+      eForm.appendChild(eLbl); eForm.appendChild(ePassWrap);
+
+      // Role selector (not for main admin)
+      var eRoleWrap=el('div','');
+      if(uname!=='admin'){
+        var curRole=u.role||'manager';
+        var eRoleRow=el('div','');eRoleRow.style.cssText='display:flex;gap:7px;margin-bottom:8px';
+        var eRoleMgr=el('button','status-btn'+(curRole==='manager'?' sel-ok':''),'👷 מנהל עבודה');
+        var eRoleAdm=el('button','status-btn'+(curRole==='admin'?' sel-merged':''),'🔑 מנהל מערכת');
+        var _eRole=curRole;
+        eRoleMgr.onclick=function(){_eRole='manager';eRoleMgr.className='status-btn sel-ok';eRoleAdm.className='status-btn';eMgrAssign.style.display='';};
+        eRoleAdm.onclick=function(){_eRole='admin';eRoleAdm.className='status-btn sel-merged';eRoleMgr.className='status-btn';eMgrAssign.style.display='none';};
+        eRoleRow.appendChild(eRoleMgr);eRoleRow.appendChild(eRoleAdm);
+        eRoleWrap.appendChild(eRoleRow);
+        // Manager assignment
+        var eMgrAssign=el('div','');eMgrAssign.style.marginBottom='8px';
+        if(curRole==='admin')eMgrAssign.style.display='none';
+        var eMgrOpts=[{v:'',l:'-- ללא שיוך --'}];
+        Object.keys(getMgrs()).forEach(function(k){eMgrOpts.push({v:k,l:getMgrLabel(k)});});
+        var eMgrSel=el('select');eMgrSel.className='sel';
+        for(var eoi=0;eoi<eMgrOpts.length;eoi++){var eoo=el('option');eoo.value=eMgrOpts[eoi].v;eoo.textContent=eMgrOpts[eoi].l;if(eMgrOpts[eoi].v===(u.managerKey||''))eoo.selected=true;eMgrSel.appendChild(eoo);}
+        eMgrAssign.appendChild(eMgrSel);
+        eRoleWrap.appendChild(eMgrAssign);
+        eForm.appendChild(eRoleWrap);
+        var eBtnR = el('div',''); eBtnR.style.cssText='display:flex;gap:7px;margin-top:4px';
+        var eSave = el('button','add-btn','שמור');
+        var eCancel = el('button','cancel-btn','ביטול');
+        eCancel.onclick = function() { adminState.editUser=null; renderAdmin(); };
+        (function(un2, roleRef, mgrSelRef){
+          eSave.onclick = function() {
+            var newLabel=eLbl.value.trim(); var newPass=ePass.value.trim();
+            if (!newLabel) { alert('שם תצוגה חובה'); return; }
+            var us=getUsers();
+            us[un2].label=newLabel;
+            if (newPass) us[un2].hash=sha256simple(newPass);
+            us[un2].role=_eRole;
+            us[un2].managerKey=(_eRole==='manager'?mgrSelRef.value||null:null);
+            saveUsers(us);
+            adminState.editUser=null; renderAdmin();
+          };
+        })(uname, _eRole, eMgrSel);
+        eBtnR.appendChild(eSave); eBtnR.appendChild(eCancel);
+        eForm.appendChild(eBtnR);
+      } else {
+        // main admin — only label/password
+        var eBtnR2 = el('div',''); eBtnR2.style.cssText='display:flex;gap:7px;margin-top:4px';
+        var eSave2 = el('button','add-btn','שמור');
+        var eCancel2 = el('button','cancel-btn','ביטול');
+        eCancel2.onclick = function() { adminState.editUser=null; renderAdmin(); };
+        (function(un3){
+          eSave2.onclick = function() {
+            var newLabel=eLbl.value.trim(); var newPass=ePass.value.trim();
+            if (!newLabel) { alert('שם תצוגה חובה'); return; }
+            var us=getUsers(); us[un3].label=newLabel;
+            if (newPass) us[un3].hash=sha256simple(newPass);
+            saveUsers(us); adminState.editUser=null; renderAdmin();
+          };
+        })(uname);
+        eBtnR2.appendChild(eSave2); eBtnR2.appendChild(eCancel2);
+        eForm.appendChild(eBtnR2);
+      }
+      card.appendChild(eForm);
+    } else {
+      // VIEW MODE
+      var top2 = el('div','admin-card-top');
+      var info = el('div','');
+      info.appendChild(el('div','admin-card-name', u.label+' ('+uname+')'));
+      var roleText = u.role==='admin'?'מנהל מערכת':'מנהל עבודה'+(u.managerKey?' — '+u.managerKey:'');
+      var roleEl = el('div','',roleText); roleEl.style.cssText='color:#64748b;font-size:11px;margin-top:2px';
+      info.appendChild(roleEl);
+      var acts3 = el('div','admin-card-actions');
+      var editBtn = el('button','admin-btn primary','עריכה');
+      (function(un) { editBtn.onclick=function(){adminState.editUser=un;renderAdmin();}; })(uname);
+      acts3.appendChild(editBtn);
+      if (uname !== 'admin') {
+        var delBtn2 = el('button','admin-btn danger','מחק');
+        (function(un) {
+          delBtn2.onclick=function(){
+            if(confirm('מחק משתמש '+un+'?')){var us=getUsers();delete us[un];saveUsers(us);renderAdmin();}
+          };
+        })(uname);
+        acts3.appendChild(delBtn2);
+      }
+      top2.appendChild(info); top2.appendChild(acts3);
+      card.appendChild(top2);
+    }
+    usersSection.appendChild(card);
+  });
+
+  // Add user form
+  // Add user via FAB button
+
+  if (adminState.addUser) {
+    var uForm = el('div','add-form'); uForm.style.marginTop='8px';
+    var uFormHd=el('div','');uFormHd.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px';
+    uFormHd.appendChild(el('div','add-form-title','הוסף משתמש חדש'));
+    var uCloseBtn=el('button','modal-x','×');uCloseBtn.onclick=function(){adminState.addUser=false;renderAdmin();};
+    uFormHd.appendChild(uCloseBtn);
+    uForm.appendChild(uFormHd);
+
+    // Role selector
+    var roleWrap=el('div','');roleWrap.style.cssText='display:flex;gap:7px;margin-bottom:12px';
+    var roleMgr=el('button','status-btn'+(adminState.addUserRole==='manager'?' sel-ok':''),'מנהל עבודה');
+    var roleAdm=el('button','status-btn'+(adminState.addUserRole==='admin'?' sel-merged':''),'מנהל מערכת');
+    roleMgr.onclick=function(){adminState.addUserRole='manager';renderAdmin();};
+    roleAdm.onclick=function(){adminState.addUserRole='admin';renderAdmin();};
+    roleWrap.appendChild(roleMgr);roleWrap.appendChild(roleAdm);
+    uForm.appendChild(roleWrap);
+
+    var uUser=el('input');uUser.className='ti';uUser.placeholder='שם משתמש';uUser.style.marginBottom='6px';
+    var uLbl=el('input');uLbl.className='ti';uLbl.placeholder='שם תצוגה';uLbl.style.marginBottom='6px';
+    var uPass=el('input');uPass.className='ti';uPass.placeholder='סיסמה';uPass.type='password';uPass.style.paddingLeft='36px';
+    var uPassWrap=el('div','pass-wrap');uPassWrap.style.marginBottom='8px';uPassWrap.appendChild(uPass);
+    var uEye=el('button','eye-btn');uEye.type='button';uEye.innerHTML='&#128065;';
+    uEye.onclick=function(){togglePassVis(null,uEye);};
+    uPassWrap.appendChild(uEye);
+    uForm.appendChild(uUser);uForm.appendChild(uLbl);uForm.appendChild(uPassWrap);
+
+    if(adminState.addUserRole==='admin'){
+      var adminNote=el('div','ibox','גישה מלאה לכל המערכת כולל מסך ניהול');
+      adminNote.style.marginBottom='8px';
+      uForm.appendChild(adminNote);
+    }
+
+    var uBtnR=el('div','');uBtnR.style.cssText='display:flex;gap:7px;margin-top:4px';
+    var uSave=el('button','add-btn','הוסף');
+    var uCancel=el('button','cancel-btn','ביטול');
+    uCancel.onclick=function(){adminState.addUser=false;renderAdmin();};
+    uSave.onclick=function(){
+      var un=uUser.value.trim().toLowerCase();
+      var lbl=uLbl.value.trim();
+      var pw=uPass.value.trim();
+      var role=adminState.addUserRole||'manager';
+      if(!un||!lbl||!pw){alert('יש למלא שם משתמש, שם תצוגה וסיסמה');return;}
+      var us=getUsers();
+      if(us[un]){alert('שם משתמש כבר קיים');return;}
+      var mk=(role==='manager')?lbl:null;
+      us[un]={hash:sha256simple(pw),role:role,label:lbl,managerKey:mk};
+      saveUsers(us);
+      if(role==='manager'&&mk){var mgrs2=getMgrs();if(!mgrs2[mk]){mgrs2[mk]={label:lbl,teams:[]};saveMgrs(mgrs2);}}
+      adminState.addUser=false;renderAdmin();
+    };
+    uBtnR.appendChild(uSave);uBtnR.appendChild(uCancel);
+    uForm.appendChild(uBtnR);
+    usersSection.appendChild(uForm);
+  }
+  sc.appendChild(usersSection);
+}
+
+// ════════════════════════════════════════════
+// PRINT
+// ════════════════════════════════════════════
+function buildPrint(data,type){
+  var ts=getMgrTeams(data.managerKey);
+  function blp(v){if(v===null||v===undefined)return'—';return v?'כן':'לא';}
+  function tr(k,v){return'<tr><td style="padding:5px 4px;color:#64748b;width:42%">'+k+'</td><td style="padding:5px 4px;font-weight:600">'+v+'</td></tr>';}
+  function sh(t,c){return'<h3 style="background:'+c+';padding:6px 11px;border-radius:5px;margin:12px 0 7px;font-size:12px">'+t+'</h3>';}
+  var mRows='';
+  for(var i=0;i<ts.length;i++){var t=ts[i];var m=data.morning[t]||{};var bad=[];if(m.uniform===false)bad.push('לבוש');if(m.vehicle===false)bad.push('רכב');if(m.tools===false)bad.push('כלים');var arrTxt=m.arrived===true?'הגיע בזמן':m.arrived===false?'איחר':'לא דווח';mRows+=tr(t,arrTxt+(bad.length?' | '+bad.join(', '):''));}
+  var eRows='';
+  for(var j=0;j<ts.length;j++){var t2=ts[j];var ev=data.eod[t2]||{};var stl={ok:'תקין',warn:'אירוע',merged:'עם '+(ev.mergedWith||''),absent:'לא עבד'}[ev.status]||'לא דווח';eRows+=tr(t2,stl);if(ev.status==='warn'){if(ev.deviation===true)eRows+=tr('חריגה '+t2,ev.devDetail||'כן');if(ev.unresolved===true)eRows+=tr('תקלה '+t2,ev.unresDetail||'כן');}}
+  var tRows='';
+  for(var k=0;k<ts.length;k++){var t3=ts[k];var r2=data.tomorrow[t3]||{};tRows+=tr(t3+' אישור',blp(r2.approved));if(!r2.noTools&&r2.specialTools&&r2.specialTools.length)tRows+=tr(t3+' כלים',r2.specialTools.join(', '));}
+  var openIssues=[];for(var l=0;l<ts.length;l++){if(data.eod[ts[l]]&&data.eod[ts[l]].unresolved===true)openIssues.push(ts[l]);}
+  var issHtml='';
+  if(openIssues.length){var liHtml='';for(var n=0;n<openIssues.length;n++){liHtml+='<li style="color:#b91c1c"><strong>['+openIssues[n]+']</strong> '+(data.eod[openIssues[n]].unresDetail||'')+'</li>';}issHtml='<div style="background:#fff5f5;border:2px solid #dc2626;border-radius:7px;padding:12px;margin-bottom:14px"><strong style="color:#dc2626">תקלות פתוחות</strong><ul style="margin:7px 0 0;padding-right:16px">'+liHtml+'</ul></div>';}
+  var sigHtml='';
+  if(type==='morning'&&data.morningSignatureImg)sigHtml='<div style="border:1px solid #166534;border-radius:7px;padding:10px;text-align:center;margin-top:10px"><div style="color:#166634;font-weight:700;font-size:12px">דיווח בוקר חתום</div><img src="'+data.morningSignatureImg+'" style="max-width:130px;height:40px;margin:4px auto;display:block"/><div style="color:#64748b;font-size:10px">'+data.managerKey+' | '+data.morningSignedAt+'</div></div>';
+  if(type==='eod'&&data.eodSignatureImg)sigHtml='<div style="border:1px solid #166534;border-radius:7px;padding:10px;text-align:center;margin-top:10px"><div style="color:#166634;font-weight:700;font-size:12px">דיווח סוף יום חתום</div><img src="'+data.eodSignatureImg+'" style="max-width:130px;height:40px;margin:4px auto;display:block"/><div style="color:#64748b;font-size:10px">'+data.managerKey+' | '+data.eodSignedAt+'</div></div>';
+  var html='<div style="font-family:Arial,sans-serif;direction:rtl;max-width:700px;margin:auto;padding:24px;color:#1e293b">';
+  html+='<div style="display:flex;justify-content:space-between;border-bottom:3px solid #1d4ed8;padding-bottom:10px;margin-bottom:14px">';
+  html+='<div><h1 style="color:#1d4ed8;margin:0 0 3px;font-size:18px">GLOBUS - דוח בקרת שטח</h1><p style="color:#64748b;margin:0;font-size:11px">גלובוס לוגיסטיקה</p></div>';
+  html+='<div style="text-align:left"><div style="font-weight:800;font-size:12px">'+getMgrLabel(data.managerKey)+'</div><div style="color:#64748b;font-size:11px">'+data.date+'</div></div></div>';
+  html+=issHtml;
+  if(type==='morning'||type==='full'){html+=sh('דיווח בוקר','#eff6ff;color:#1d4ed8')+'<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:#f1f5f9"><th style="padding:5px;text-align:right">צוות</th><th style="padding:5px;text-align:right">סטטוס</th></tr></thead><tbody>'+mRows+'</tbody></table>'+sigHtml;}
+  if(type==='eod'||type==='full'){html+=sh('דיווח סוף יום','#fff7ed;color:#c2410c')+'<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:#f1f5f9"><th style="padding:5px;text-align:right">צוות</th><th style="padding:5px;text-align:right">סטטוס</th></tr></thead><tbody>'+eRows+'</tbody></table>';html+=sh('מוכנות מחר','#f0fdf4;color:#166534')+'<table style="width:100%;border-collapse:collapse;font-size:11px">'+tRows+'</table>'+sigHtml;}
+  html+='<div style="text-align:center;color:#94a3b8;font-size:9px;margin-top:18px;border-top:1px solid #e2e8f0;padding-top:8px">Globus G-Ops | '+data.date+'</div></div>';
+  document.getElementById('print-area').innerHTML=html;
+  window.print();
+}
+
+function printReport(){buildPrint(S,S.dayTab==='morning'?'morning':'eod');}
+function printHistReport(){if(currentHistRep)buildPrint(currentHistRep.data,currentHistRep.type||'full');}
+
+// ════════════════════════════════════════════
+// ════════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════════
+(function() {
+  // Check session
+  var sess = DB.get('gfc_session');
+  if (sess && sess.username) {
+    currentUser = sess;
+    DB.syncFromFirestore(function() { startApp(); });
+  }
+
+  // Firebase onAuthStateChanged hook
+  window._authReady = function(user) {
+    // Only used for Firestore sync after page reload
+    if (user && currentUser && !document.getElementById('app-screen').style.display.includes('block')) {
+      DB.syncFromFirestore(function(){});
+    }
+  };
+
+  document.getElementById('li-pass').addEventListener('keydown', function(e) { if (e.key === 'Enter') doLogin(); });
+  document.getElementById('li-user').addEventListener('keydown', function(e) { if (e.key === 'Enter') document.getElementById('li-pass').focus(); });
+})();
+</script>
+</body>
+</html>

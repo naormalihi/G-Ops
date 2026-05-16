@@ -52,21 +52,26 @@
 
 body{background:var(--bg);font-family:'Heebo',Arial,sans-serif;direction:rtl;color:var(--text);min-height:100vh;overflow-x:hidden;transition:background .2s,color .2s}
 #root{max-width:480px;margin:0 auto}
-@media (min-width:768px){
-  body{background:#0a0f1e}
-  #login-screen{background:linear-gradient(160deg,#020817 0%,#0a1628 100%)}
-  .login-card{max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
-  #app-screen{display:flex;justify-content:center;min-height:100vh}
-  #app{max-width:520px;width:100%;background:#020817;box-shadow:0 0 40px rgba(0,0,0,.5);min-height:100vh}
-  #drawer{max-width:300px}
-  #nav{max-width:520px}
-  .fab{left:calc(50% - 240px)}
+@media (min-width:600px){
+  body{background:#060d1f;display:flex;justify-content:center;align-items:flex-start;min-height:100vh}
+  #login-screen{background:linear-gradient(160deg,#020817 0%,#0a1628 100%);width:100%}
+  .login-card{max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+  #app-screen{width:100%;display:flex;justify-content:center;min-height:100vh}
+  #app{max-width:540px;width:100%;background:#020817;box-shadow:0 0 60px rgba(0,0,0,.7);min-height:100vh;position:relative}
+  #header{position:sticky;top:0;z-index:50}
+  #drawer{position:fixed}
+  #drawer-overlay{position:fixed}
+  .fab{position:fixed;left:auto;right:calc(50% - 250px)}
+  .modal-ov{position:fixed}
+  .sum-modal-ov{position:fixed}
 }
-@media (min-width:1024px){
-  #app{max-width:560px}
-  #nav{max-width:560px}
-  .fab{left:calc(50% - 260px)}
-  #header{max-width:560px}
+@media (min-width:900px){
+  #app{max-width:580px}
+  .fab{right:calc(50% - 270px)}
+}
+@media (min-width:1200px){
+  #app{max-width:600px}
+  .fab{right:calc(50% - 280px)}
 }
 
 /* LOGIN */
@@ -350,11 +355,7 @@ body{background:var(--bg);font-family:'Heebo',Arial,sans-serif;direction:rtl;col
       <div class="drawer-user-role" id="drawer-role"></div>
     </div>
     <div class="drawer-nav" id="drawer-nav"></div>
-    <div class="drawer-logout">
-      <button class="drawer-logout-btn" id="theme-toggle-btn" onclick="toggleTheme()" aria-label="החלף מצב תצוגה" style="color:var(--text2);border-top:1px solid var(--border);margin-bottom:0">
-        <span class="di" id="theme-icon">☀️</span><span id="theme-label">מצב בהיר</span>
-      </button>
-      <button class="drawer-logout-btn" onclick="doLogout()" aria-label="יציאה מהמערכת" role="button">
+    <div class="drawer-logout"><button class="drawer-logout-btn" onclick="doLogout()" aria-label="יציאה מהמערכת" role="button">
         <span class="di">&#128682;</span>יציאה
       </button>
     </div>
@@ -461,10 +462,12 @@ var DB = {
     if (window.fbDb && currentUser) {
       var fns = window.fbFns;
       var repData = JSON.parse(JSON.stringify(rep));
-      repData.uid = window.fbAuth.currentUser ? window.fbAuth.currentUser.uid : '';
+      repData.uid = window.fbAuth && window.fbAuth.currentUser ? window.fbAuth.currentUser.uid : (currentUser.uid||'');
+      repData.managerKey = rep.managerKey || (currentUser.managerKey||'');
       repData.createdAt = fns.serverTimestamp();
       fns.addDoc(fns.collection(window.fbDb, 'reports'), repData)
-         .catch(function(e) { console.warn('Firestore saveReport:', e); });
+         .then(function(){ console.log('Report saved to Firestore'); })
+         .catch(function(e) { console.warn('Firestore saveReport:', e.message); });
     }
   },
 
@@ -524,8 +527,9 @@ var DB = {
       q = fns.query(fns.collection(window.fbDb, 'reports'),
         fns.orderBy('date', 'desc'), fns.limit(80));
     } else {
+      // Query by uid OR by managerKey for backwards compat
       q = fns.query(fns.collection(window.fbDb, 'reports'),
-        fns.where('uid', '==', uid),
+        fns.where('managerKey', '==', currentUser.managerKey||''),
         fns.orderBy('date', 'desc'), fns.limit(80));
     }
     fns.getDocs(q).then(function(snap) {
@@ -716,15 +720,30 @@ function doLogin() {
           // Initialize Firestore user doc if missing
           _initFirestoreUser(cred.user.uid, user);
         }
-        DB.syncFromFirestore(function() { startApp(); });
+        // Show loading state
+  document.getElementById('login-err').textContent = 'מתחבר...';
+  DB.syncFromFirestore(function() {
+    document.getElementById('login-err').textContent = '';
+    startApp();
+  });
       })
       .catch(function(e) {
         console.warn('Firebase Auth error:', e.code);
         // Fallback: login locally anyway
-        DB.syncFromFirestore(function() { startApp(); });
+        // Show loading state
+  document.getElementById('login-err').textContent = 'מתחבר...';
+  DB.syncFromFirestore(function() {
+    document.getElementById('login-err').textContent = '';
+    startApp();
+  });
       });
   } else {
-    DB.syncFromFirestore(function() { startApp(); });
+    // Show loading state
+  document.getElementById('login-err').textContent = 'מתחבר...';
+  DB.syncFromFirestore(function() {
+    document.getElementById('login-err').textContent = '';
+    startApp();
+  });
   }
 }
 
@@ -2222,7 +2241,12 @@ function printHistReport(){if(currentHistRep)buildPrint(currentHistRep.data,curr
   var sess = DB.get('gfc_session');
   if (sess && sess.username) {
     currentUser = sess;
-    DB.syncFromFirestore(function() { startApp(); });
+    // Show loading state
+  document.getElementById('login-err').textContent = 'מתחבר...';
+  DB.syncFromFirestore(function() {
+    document.getElementById('login-err').textContent = '';
+    startApp();
+  });
   }
 
   // Firebase onAuthStateChanged hook
